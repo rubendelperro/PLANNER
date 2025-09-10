@@ -1,5 +1,8 @@
 # PLANNER — Guía rápida
 
+[![Lint](https://github.com/rubendelperro/PLANNER/actions/workflows/lint.yml/badge.svg)](https://github.com/rubendelperro/PLANNER/actions/workflows/lint.yml)
+[![Cypress E2E](https://github.com/rubendelperro/PLANNER/actions/workflows/cypress-e2e.yml/badge.svg)](https://github.com/rubendelperro/PLANNER/actions/workflows/cypress-e2e.yml)
+
 Resumen corto: este repositorio usa Prettier para formateo, ESLint para linting, Husky + lint-staged para hooks locales (Prettier en pre-commit) y Cypress para E2E. Hay un workflow de CI que ejecuta ESLint en PRs.
 
 ## Requisitos
