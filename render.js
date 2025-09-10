@@ -1,4 +1,11 @@
-import { SLOTS, SLOT_NAMES, PRECISION_FACTOR, getWeekDates, getMonthDates, getRacionesToShow } from './utils.js';
+import {
+  SLOTS,
+  SLOT_NAMES,
+  PRECISION_FACTOR,
+  getWeekDates,
+  getMonthDates,
+  getRacionesToShow,
+} from './utils.js';
 import * as selectors from './selectors.js';
 import { attachEventListeners } from './events.js';
 
@@ -6,26 +13,32 @@ import { attachEventListeners } from './events.js';
 let getState = () => ({});
 
 export function initializeRenderer(getStateFn) {
-    getState = getStateFn;
+  getState = getStateFn;
 }
 
 // --- Módulo: Centro de Mando + Panel de Objetivos ---
 function _renderControlCenter(state) {
-    const { profiles, ui } = state;
-    const activeProfile = profiles.byId[ui.activeProfileId];
-    const isDefaultProfileActive = activeProfile?.isDefault;
-    const formDisabledState = isDefaultProfileActive ? 'disabled' : '';
-    const formDisabledClasses = isDefaultProfileActive ? 'disabled:bg-gray-100 disabled:cursor-not-allowed' : '';
+  const { profiles, ui } = state;
+  const activeProfile = profiles.byId[ui.activeProfileId];
+  const isDefaultProfileActive = activeProfile?.isDefault;
+  const formDisabledState = isDefaultProfileActive ? 'disabled' : '';
+  const formDisabledClasses = isDefaultProfileActive
+    ? 'disabled:bg-gray-100 disabled:cursor-not-allowed'
+    : '';
 
-    return `
+  return `
         <div class="bg-white p-6 rounded-lg shadow-md">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold">Centro de Mando</h2>
                 <div class="flex items-center gap-2">
                     <select id="profile-selector" class="rounded-md border-gray-300 shadow-sm text-sm">
-                        ${profiles.allIds.map(id => `
+                        ${profiles.allIds
+                          .map(
+                            (id) => `
                             <option value="${id}" ${id === ui.activeProfileId ? 'selected' : ''}>${profiles.byId[id].name}</option>
-                        `).join('')}
+                        `
+                          )
+                          .join('')}
                     </select>
                     <button id="new-profile-btn" title="Crear Nuevo Perfil" class="text-sm bg-green-500 text-white py-1 px-3 rounded-md hover:bg-green-600">+</button>
                 </div>
@@ -61,49 +74,52 @@ function _renderControlCenter(state) {
                 <div id="targets-panel" class="mt-4 max-h-60 overflow-y-auto">
                     <h3 class="font-semibold mb-2">Panel de Objetivos</h3>
                     ${(() => {
-                        const activeTargets = selectors.getActiveNutritionalTargets();
+                      const activeTargets =
+                        selectors.getActiveNutritionalTargets();
 
-                        return (activeProfile?.trackedNutrients || []).map(nutrientId => {
-                            const def = state.items.byId[nutrientId];
-                            if (!def) return '';
+                      return (activeProfile?.trackedNutrients || [])
+                        .map((nutrientId) => {
+                          const def = state.items.byId[nutrientId];
+                          if (!def) return '';
 
-                            // Obtén el objetivo si existe
-                            const targetInfo = activeTargets[nutrientId];
-                            const finalValue = targetInfo?.finalValue ?? null;
-                            const source = targetInfo?.source ?? null;
-                            const sourceName = targetInfo?.sourceName ?? '';
-                            let tooltipText = '';
-                            switch (source) {
-                                case 'reference':
-                                    tooltipText = `Valor de Referencia (${sourceName})`;
-                                    break;
-                                case 'calculated':
-                                    tooltipText = 'Objetivo calculado para tu perfil';
-                                    break;
-                                case 'personal':
-                                    tooltipText = 'Meta personal (modificado)';
-                                    break;
-                                default:
-                                    tooltipText = '';
-                            }
-                            const isEditable = !isDefaultProfileActive;
+                          // Obtén el objetivo si existe
+                          const targetInfo = activeTargets[nutrientId];
+                          const finalValue = targetInfo?.finalValue ?? null;
+                          const source = targetInfo?.source ?? null;
+                          const sourceName = targetInfo?.sourceName ?? '';
+                          let tooltipText = '';
+                          switch (source) {
+                            case 'reference':
+                              tooltipText = `Valor de Referencia (${sourceName})`;
+                              break;
+                            case 'calculated':
+                              tooltipText = 'Objetivo calculado para tu perfil';
+                              break;
+                            case 'personal':
+                              tooltipText = 'Meta personal (modificado)';
+                              break;
+                            default:
+                              tooltipText = '';
+                          }
+                          const isEditable = !isDefaultProfileActive;
 
-                            // Mostrar solo la cantidad si no hay objetivo
-                            return `
+                          // Mostrar solo la cantidad si no hay objetivo
+                          return `
                             <div class="text-sm p-2 rounded-md ${isEditable ? 'hover:bg-gray-100 cursor-pointer' : 'opacity-75'}"
                                 ${isEditable ? `data-nutrient-id="${nutrientId}"` : ''} title="${tooltipText}">
                                 <div class="flex justify-between items-center">
                                     <span class="flex items-center gap-1">${def.name}</span>
                                     <div class="flex items-center gap-2">
                                         ${
-                                            finalValue == null
-                                                ? `<span class="font-bold text-lg text-gray-500" data-value-display="0${def.unit || ''}">0${def.unit || ''}</span>`
-                                                : `<span class="font-bold text-lg ${source === 'personal' ? 'text-blue-600' : 'text-gray-800'}" data-value-display="${finalValue.toFixed(0)}${def.unit || ''}">${finalValue.toFixed(0)}${def.unit || ''}</span>`
+                                          finalValue == null
+                                            ? `<span class="font-bold text-lg text-gray-500" data-value-display="0${def.unit || ''}">0${def.unit || ''}</span>`
+                                            : `<span class="font-bold text-lg ${source === 'personal' ? 'text-blue-600' : 'text-gray-800'}" data-value-display="${finalValue.toFixed(0)}${def.unit || ''}">${finalValue.toFixed(0)}${def.unit || ''}</span>`
                                         }
                                     </div>
                                 </div>
                             </div>`;
-                        }).join('');
+                        })
+                        .join('');
                     })()}
                 </div>
         </div>
@@ -111,19 +127,23 @@ function _renderControlCenter(state) {
 }
 
 function _renderNutrientManager(state) {
-    const { profiles, ui, items } = state;
-    const activeProfile = profiles.byId[ui.activeProfileId];
-    const trackedIds = activeProfile?.trackedNutrients || [];
-    const untrackedIds = items.allIds.filter(id => items.byId[id].itemType === 'definicion' && !trackedIds.includes(id));
-    const orderedNutrientIds = [...trackedIds, ...untrackedIds];
+  const { profiles, ui, items } = state;
+  const activeProfile = profiles.byId[ui.activeProfileId];
+  const trackedIds = activeProfile?.trackedNutrients || [];
+  const untrackedIds = items.allIds.filter(
+    (id) => items.byId[id].itemType === 'definicion' && !trackedIds.includes(id)
+  );
+  const orderedNutrientIds = [...trackedIds, ...untrackedIds];
 
-    return `
+  return `
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold mb-4">Gestor de Nutrientes</h2>
             <div id="nutrient-manager-list" class="space-y-2 mb-4 border-b pb-4">
-                ${orderedNutrientIds.map(id => {
+                ${orderedNutrientIds
+                  .map((id) => {
                     const def = items.byId[id];
-                    const isTracked = activeProfile?.trackedNutrients?.includes(id);
+                    const isTracked =
+                      activeProfile?.trackedNutrients?.includes(id);
                     return `
                     <div
                         id="manager-nutrient-${id}"
@@ -141,7 +161,8 @@ function _renderNutrientManager(state) {
                         ${def.isCustom ? `<button data-delete-nutrient-id="${id}" class="text-red-500 hover:text-red-700 font-bold px-2">X</button>` : '<div class="w-8"></div>'}
                     </div>
                     `;
-                }).join('')}
+                  })
+                  .join('')}
             </div>
 
             <form id="add-nutrient-form" class="space-y-3">
@@ -155,7 +176,7 @@ function _renderNutrientManager(state) {
 }
 
 const renderFunctions = {
-    renderSettingsView(state) {
+  renderSettingsView(state) {
     // Mostrar Centro de Mando, Gestor de Nutrientes y Gestor de Supermercados en 'Mis Ajustes'
     // Cada módulo se envuelve en su propia columna para mantenerlos visualmente separados.
     return `
@@ -168,26 +189,31 @@ const renderFunctions = {
             ${_renderCategoryManager(state)}
         </div>
     `;
-    }
+  },
 };
 
 // --- Render Helper Functions ---
 
 function _renderNexusHeader(ui) {
-    const { nexusView, activePlannerDay } = ui;
-    let title;
+  const { nexusView, activePlannerDay } = ui;
+  let title;
 
-    if (nexusView === 'week') {
-        const weekDates = getWeekDates(new Date(activePlannerDay || new Date()));
-        const startOfWeek = weekDates[0];
-        const endOfWeek = weekDates[6];
-        const formatMonth = (date) => date.toLocaleDateString('es-ES', { month: 'short' });
-        title = `Semana del ${startOfWeek.getDate()} ${formatMonth(startOfWeek)} al ${endOfWeek.getDate()} ${formatMonth(endOfWeek)}, ${endOfWeek.getFullYear()}`;
-    } else { // month
-        title = new Date(activePlannerDay || new Date()).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    }
+  if (nexusView === 'week') {
+    const weekDates = getWeekDates(new Date(activePlannerDay || new Date()));
+    const startOfWeek = weekDates[0];
+    const endOfWeek = weekDates[6];
+    const formatMonth = (date) =>
+      date.toLocaleDateString('es-ES', { month: 'short' });
+    title = `Semana del ${startOfWeek.getDate()} ${formatMonth(startOfWeek)} al ${endOfWeek.getDate()} ${formatMonth(endOfWeek)}, ${endOfWeek.getFullYear()}`;
+  } else {
+    // month
+    title = new Date(activePlannerDay || new Date()).toLocaleDateString(
+      'es-ES',
+      { month: 'long', year: 'numeric' }
+    );
+  }
 
-    return `
+  return `
         <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
             <div class="flex items-center gap-4">
                 <h2 class="text-2xl font-bold">Calendario Analítico Nexus</h2>
@@ -208,20 +234,27 @@ function _renderNexusHeader(ui) {
         </div>`;
 }
 
-function _renderNexusMonthCell(date, currentMonth, planner, isSelected, selectionId, consumablesMap) {
-    const isGhostDay = date.getMonth() !== currentMonth;
-    const dayPlan = planner[date.toISOString().split('T')[0]];
-    const mealItems = dayPlan?.[selectionId.split('/')[1]] || [];
+function _renderNexusMonthCell(
+  date,
+  currentMonth,
+  planner,
+  isSelected,
+  selectionId,
+  consumablesMap
+) {
+  const isGhostDay = date.getMonth() !== currentMonth;
+  const dayPlan = planner[date.toISOString().split('T')[0]];
+  const mealItems = dayPlan?.[selectionId.split('/')[1]] || [];
 
-    const cellClasses = `p-1 border-r border-b border-gray-200 text-xs ${isGhostDay ? 'is-ghost-day' : ''}`;
-    const buttonClasses = `relative w-full h-full text-left p-1 nexus-cell ${isSelected ? 'is-selected' : ''}`;
+  const cellClasses = `p-1 border-r border-b border-gray-200 text-xs ${isGhostDay ? 'is-ghost-day' : ''}`;
+  const buttonClasses = `relative w-full h-full text-left p-1 nexus-cell ${isSelected ? 'is-selected' : ''}`;
 
-    return `
+  return `
         <div class="${cellClasses}">
             <button class="${buttonClasses}" data-selection-type="cell" data-selection-id="${selectionId}">
                 <span class="absolute top-1 right-1 font-semibold">${date.getDate()}</span>
                 <div class="mt-4 text-xs overflow-hidden text-ellipsis whitespace-nowrap">
-                    ${mealItems.map(item => (consumablesMap.get(item.id)?.name || '?')).join(', ')}
+                    ${mealItems.map((item) => consumablesMap.get(item.id)?.name || '?').join(', ')}
                 </div>
             </button>
         </div>
@@ -229,77 +262,111 @@ function _renderNexusMonthCell(date, currentMonth, planner, isSelected, selectio
 }
 
 function _renderNexusWeekGrid(ui, planner, consumablesMap) {
-    const { activePlannerDay, selectedCells } = ui;
-    const weekDates = getWeekDates(new Date(activePlannerDay || new Date()));
+  const { activePlannerDay, selectedCells } = ui;
+  const weekDates = getWeekDates(new Date(activePlannerDay || new Date()));
 
-    const allIdsInContext = weekDates.flatMap(date => SLOTS.map(slot => `${date.toISOString().split('T')[0]}/${slot}`));
-    const allSelected = allIdsInContext.length > 0 && allIdsInContext.every(id => selectedCells.has(id));
-    const partialSelected = !allSelected && allIdsInContext.some(id => selectedCells.has(id));
-    let toggleAllClass = '';
-    if (allSelected) toggleAllClass = 'is-fully-selected';
-    else if (partialSelected) toggleAllClass = 'is-partially-selected';
+  const allIdsInContext = weekDates.flatMap((date) =>
+    SLOTS.map((slot) => `${date.toISOString().split('T')[0]}/${slot}`)
+  );
+  const allSelected =
+    allIdsInContext.length > 0 &&
+    allIdsInContext.every((id) => selectedCells.has(id));
+  const partialSelected =
+    !allSelected && allIdsInContext.some((id) => selectedCells.has(id));
+  let toggleAllClass = '';
+  if (allSelected) toggleAllClass = 'is-fully-selected';
+  else if (partialSelected) toggleAllClass = 'is-partially-selected';
 
-    return `
+  return `
         <div class="grid grid-cols-8 border-t border-l border-gray-200">
             <div class="font-bold text-center p-2 border-r border-b border-gray-200 bg-gray-50">
                 <button class="w-full h-full nexus-cell nexus-toggle-all ${toggleAllClass}" data-selection-type="all" title="Seleccionar/Deseleccionar todo">&#10003;</button>
             </div>
-            ${weekDates.map(date => {
+            ${weekDates
+              .map((date) => {
                 const dateStr = date.toISOString().split('T')[0];
-                const allDayCellsSelected = SLOTS.every(slot => selectedCells.has(`${dateStr}/${slot}`));
+                const allDayCellsSelected = SLOTS.every((slot) =>
+                  selectedCells.has(`${dateStr}/${slot}`)
+                );
                 return `<div class="font-bold text-center p-2 border-r border-b border-gray-200 bg-gray-50">
                     <button class="w-full h-full nexus-cell ${allDayCellsSelected ? 'is-fully-selected' : ''}" data-selection-type="day" data-selection-id="${dateStr}">
                         ${date.toLocaleDateString('es-ES', { weekday: 'short' })} ${date.getDate()}
                     </button>
                 </div>`;
-            }).join('')}
+              })
+              .join('')}
 
-            ${SLOTS.map(slot => {
-                const allSlotCellsSelected = weekDates.every(date => selectedCells.has(`${date.toISOString().split('T')[0]}/${slot}`));
-                return `
+            ${SLOTS.map((slot) => {
+              const allSlotCellsSelected = weekDates.every((date) =>
+                selectedCells.has(`${date.toISOString().split('T')[0]}/${slot}`)
+              );
+              return `
                     <div class="font-bold text-left p-2 border-r border-b border-gray-200 bg-gray-50">
                         <button class="w-full h-full text-left nexus-cell ${allSlotCellsSelected ? 'is-fully-selected' : ''}" data-selection-type="slotRow" data-selection-id="${slot}">
                             ${SLOT_NAMES[slot]}
                         </button>
                     </div>
-                    ${weekDates.map(date => {
+                    ${weekDates
+                      .map((date) => {
                         const dateString = date.toISOString().split('T')[0];
                         const dayPlan = planner[dateString];
                         const mealItems = dayPlan?.[slot] || [];
                         const selectionId = `${dateString}/${slot}`;
                         return `<div class="p-2 border-r border-b border-gray-200 text-xs">
                             <button class="w-full h-full text-left nexus-cell ${selectedCells.has(selectionId) ? 'is-selected' : ''}" data-selection-type="cell" data-selection-id="${selectionId}">
-                                ${mealItems.map(item => (consumablesMap.get(item.id)?.name || '?')).join(', ') || '<span class="italic text-gray-400">Vacío</span>'}
+                                ${mealItems.map((item) => consumablesMap.get(item.id)?.name || '?').join(', ') || '<span class="italic text-gray-400">Vacío</span>'}
                             </button>
                         </div>`;
-                    }).join('')}`;
+                      })
+                      .join('')}`;
             }).join('')}
         </div>`;
 }
 
 function _renderNexusMonthGrid(ui, planner, consumablesMap) {
-    const { activePlannerDay, selectedCells } = ui;
-    const monthDatesMatrix = getMonthDates(new Date(activePlannerDay || new Date()));
-    const currentMonth = new Date(activePlannerDay || new Date()).getMonth();
+  const { activePlannerDay, selectedCells } = ui;
+  const monthDatesMatrix = getMonthDates(
+    new Date(activePlannerDay || new Date())
+  );
+  const currentMonth = new Date(activePlannerDay || new Date()).getMonth();
 
-    const allIdsInContext = monthDatesMatrix.flat().filter(d => d.getMonth() === currentMonth).flatMap(date => SLOTS.map(slot => `${date.toISOString().split('T')[0]}/${slot}`));
-    const allSelected = allIdsInContext.length > 0 && allIdsInContext.every(id => selectedCells.has(id));
-    const partialSelected = !allSelected && allIdsInContext.some(id => selectedCells.has(id));
-    let toggleAllClass = '';
-    if (allSelected) toggleAllClass = 'is-fully-selected';
-    else if (partialSelected) toggleAllClass = 'is-partially-selected';
+  const allIdsInContext = monthDatesMatrix
+    .flat()
+    .filter((d) => d.getMonth() === currentMonth)
+    .flatMap((date) =>
+      SLOTS.map((slot) => `${date.toISOString().split('T')[0]}/${slot}`)
+    );
+  const allSelected =
+    allIdsInContext.length > 0 &&
+    allIdsInContext.every((id) => selectedCells.has(id));
+  const partialSelected =
+    !allSelected && allIdsInContext.some((id) => selectedCells.has(id));
+  let toggleAllClass = '';
+  if (allSelected) toggleAllClass = 'is-fully-selected';
+  else if (partialSelected) toggleAllClass = 'is-partially-selected';
 
-    return `
+  return `
         <div class="grid grid-cols-8 border-t border-l border-gray-200">
             <div class="font-bold text-center p-2 border-r border-b border-gray-200 bg-gray-50">
                 <button class="w-full h-full nexus-cell nexus-toggle-all ${toggleAllClass}" data-selection-type="all" title="Seleccionar/Deseleccionar todo">&#10003;</button>
             </div>
-            ${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day, index) => {
+            ${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+              .map((day, index) => {
                 const dayIndex = (index + 1) % 7;
 
-                const isColumnSelected = monthDatesMatrix.flat()
-                    .filter(d => d.getDay() === dayIndex && d.getMonth() === currentMonth)
-                    .every(d => SLOTS.every(slot => selectedCells.has(`${d.toISOString().split('T')[0]}/${slot}`)));
+                const isColumnSelected = monthDatesMatrix
+                  .flat()
+                  .filter(
+                    (d) =>
+                      d.getDay() === dayIndex && d.getMonth() === currentMonth
+                  )
+                  .every((d) =>
+                    SLOTS.every((slot) =>
+                      selectedCells.has(
+                        `${d.toISOString().split('T')[0]}/${slot}`
+                      )
+                    )
+                  );
 
                 const buttonClass = `w-full h-full p-2 nexus-cell ${isColumnSelected ? 'is-fully-selected' : ''}`;
 
@@ -308,36 +375,54 @@ function _renderNexusMonthGrid(ui, planner, consumablesMap) {
                                 ${day}
                             </button>
                         </div>`;
-            }).join('')}
+              })
+              .join('')}
 
-            ${monthDatesMatrix.map(week => `
-                ${SLOTS.map(slot => {
-                    const allSlotCellsSelected = week.every(date => {
-                        if (date.getMonth() !== currentMonth) return true;
-                        return selectedCells.has(`${date.toISOString().split('T')[0]}/${slot}`);
-                    });
-                    const noCellsInMonthInRow = week.every(date => date.getMonth() !== currentMonth);
-                    const headerClass = `w-full h-full text-left nexus-cell ${!noCellsInMonthInRow && allSlotCellsSelected ? 'is-fully-selected' : ''}`;
+            ${monthDatesMatrix
+              .map(
+                (week) => `
+                ${SLOTS.map((slot) => {
+                  const allSlotCellsSelected = week.every((date) => {
+                    if (date.getMonth() !== currentMonth) return true;
+                    return selectedCells.has(
+                      `${date.toISOString().split('T')[0]}/${slot}`
+                    );
+                  });
+                  const noCellsInMonthInRow = week.every(
+                    (date) => date.getMonth() !== currentMonth
+                  );
+                  const headerClass = `w-full h-full text-left nexus-cell ${!noCellsInMonthInRow && allSlotCellsSelected ? 'is-fully-selected' : ''}`;
 
-                    return `
+                  return `
                         <div class="font-bold text-left p-2 border-r border-b border-gray-200 bg-gray-50 flex items-center">
                             <button class="${headerClass}" data-selection-type="slotRow" data-selection-id="${slot}">${SLOT_NAMES[slot]}</button>
                         </div>
-                        ${week.map(date => {
+                        ${week
+                          .map((date) => {
                             const selectionId = `${date.toISOString().split('T')[0]}/${slot}`;
                             const isSelected = selectedCells.has(selectionId);
-                            return _renderNexusMonthCell(date, currentMonth, planner, isSelected, selectionId, consumablesMap);
-                        }).join('')}
+                            return _renderNexusMonthCell(
+                              date,
+                              currentMonth,
+                              planner,
+                              isSelected,
+                              selectionId,
+                              consumablesMap
+                            );
+                          })
+                          .join('')}
                     `;
                 }).join('')}
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>`;
 }
 
 function _renderItemActionButtons(isEditing, itemId) {
-    const baseClass = 'px-4 py-2 rounded-md text-sm w-[160px]';
+  const baseClass = 'px-4 py-2 rounded-md text-sm w-[160px]';
 
-    return `
+  return `
         <div class="flex gap-2">
             <button type="button" id="edit-item-btn" class="${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
                 ${isEditing ? 'Cancelar Edición' : 'Editar Item'}
@@ -353,9 +438,9 @@ function _renderItemActionButtons(isEditing, itemId) {
 }
 
 function _renderRecipeActionButtons(isEditing, recipeId) {
-    const baseClass = 'px-4 py-2 rounded-md text-sm w-[160px]';
+  const baseClass = 'px-4 py-2 rounded-md text-sm w-[160px]';
 
-    return `
+  return `
         <div class="flex gap-2">
             <button type="button" id="edit-recipe-btn" class="${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
                 ${isEditing ? 'Cancelar Edición' : 'Editar Ingredientes'}
@@ -370,27 +455,36 @@ function _renderRecipeActionButtons(isEditing, recipeId) {
     `;
 }
 
-function _renderRecipeIngredient(ingredient, index, items, isEditing, totalGrams) {
-    const ingredientData = items.byId[ingredient.ingredientId];
+function _renderRecipeIngredient(
+  ingredient,
+  index,
+  items,
+  isEditing,
+  totalGrams
+) {
+  const ingredientData = items.byId[ingredient.ingredientId];
 
-    if (!ingredientData) {
-        return `
+  if (!ingredientData) {
+    return `
             <div class="bg-red-50 border border-red-200 p-3 rounded-md ${isEditing ? 'flex justify-between items-center' : ''}">
                 <span class="text-red-600">❌ Ingrediente no encontrado: ${ingredient.ingredientId}</span>
                 ${isEditing ? `<button type="button" class="remove-ingredient-btn text-red-600 hover:text-red-800" data-index="${index}">Eliminar</button>` : ''}
             </div>
         `;
-    }
+  }
 
-    const percentage = totalGrams > 0 ? ((ingredient.grams / totalGrams) * 100).toFixed(1) : 0;
+  const percentage =
+    totalGrams > 0 ? ((ingredient.grams / totalGrams) * 100).toFixed(1) : 0;
 
-    return `
+  return `
         <div class="bg-white border border-gray-200 p-4 rounded-md">
             <div class="flex justify-between items-start">
                 <div class="flex-1">
                     <h4 class="font-medium text-gray-900">${ingredientData.name}</h4>
                     <div class="flex items-center gap-4 mt-2">
-                        ${isEditing ? `
+                        ${
+                          isEditing
+                            ? `
                             <div class="flex items-center gap-2">
                                 <label class="text-sm text-gray-600">Cantidad:</label>
                                 <input type="number"
@@ -401,17 +495,23 @@ function _renderRecipeIngredient(ingredient, index, items, isEditing, totalGrams
                                        data-index="${index}">
                                 <span class="text-sm text-gray-600">g</span>
                             </div>
-                        ` : `
+                        `
+                            : `
                             <span class="text-gray-600">${ingredient.grams}g</span>
-                        `}
+                        `
+                        }
                         <span class="text-sm text-gray-500">(${percentage}% del total)</span>
                     </div>
                 </div>
-                ${isEditing ? `
+                ${
+                  isEditing
+                    ? `
                     <button type="button" class="remove-ingredient-btn text-red-600 hover:text-red-800 ml-4" data-index="${index}">
                         🗑️
                     </button>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
         </div>
     `;
@@ -420,28 +520,28 @@ function _renderRecipeIngredient(ingredient, index, items, isEditing, totalGrams
 // Sección 'Stock' eliminada: el contenido y el helper han sido suprimidos para simplificar las fichas de ingredientes.
 
 function _renderPriceField(item, isEditing) {
-    if (isEditing) {
-        return `
+  if (isEditing) {
+    return `
             <div class="mt-1 flex gap-2">
                 <input type="number" name="priceValue" step="0.01" value="${item.logistics.price.value || ''}" placeholder="Precio" class="block w-full rounded-md border-gray-300 shadow-sm text-sm">
             </div>
         `;
-    } else {
-        return `
+  } else {
+    return `
             <div class="mt-1">
                 <div class="text-base text-gray-600">Precio</div>
                 <div class="mt-1 text-2xl font-bold text-indigo-600">${item.logistics.price.value ? '€ ' + item.logistics.price.value : '—'}</div>
             </div>
         `;
-    }
+  }
 }
 
 function _renderPackageField(item, isEditing) {
-    const grams = item.logistics?.packageGrams || '';
-    const units = item.logistics?.unitsPerPackage || '';
+  const grams = item.logistics?.packageGrams || '';
+  const units = item.logistics?.unitsPerPackage || '';
 
-    if (isEditing) {
-        return `
+  if (isEditing) {
+    return `
             <div class="mt-1 grid grid-cols-2 gap-2 items-center">
                 <div>
                     <label class="block text-sm text-gray-600">Gramos por paquete</label>
@@ -453,71 +553,83 @@ function _renderPackageField(item, isEditing) {
                 </div>
             </div>
         `;
-    } else {
-        if (!grams && !units) {
-            return `
+  } else {
+    if (!grams && !units) {
+      return `
                 <div class="mt-1 text-sm text-gray-400 italic">Sin información de paquete</div>
             `;
-        }
+    }
 
-        const parts = [];
-        if (grams) parts.push(`${grams} g`);
-        if (units) parts.push(`${units} u/paquete`);
+    const parts = [];
+    if (grams) parts.push(`${grams} g`);
+    if (units) parts.push(`${units} u/paquete`);
 
-        return `
+    return `
             <div class="mt-1">
                 <div class="text-base text-gray-600">Paquete</div>
                 <div class="mt-1 text-lg font-semibold text-gray-800">${parts.join(' · ')}</div>
             </div>
         `;
-    }
+  }
 }
 
 function _renderEconomicMetrics(item, isEditing) {
-    // Mostrar solo en modo visión (no en edición)
-    if (isEditing) return '';
+  // Mostrar solo en modo visión (no en edición)
+  if (isEditing) return '';
 
-    const price = item.logistics?.price?.value;
-    const packageGrams = item.logistics?.packageGrams;
-    const units = item.logistics?.unitsPerPackage;
+  const price = item.logistics?.price?.value;
+  const packageGrams = item.logistics?.packageGrams;
+  const units = item.logistics?.unitsPerPackage;
 
-    // Necesitamos al menos precio y gramos por paquete para calcular €/kg
-    const hasPrice = typeof price === 'number' && !isNaN(price);
-    const hasGrams = typeof packageGrams === 'number' && !isNaN(packageGrams) && packageGrams > 0;
-    const hasUnits = typeof units === 'number' && !isNaN(units) && units > 0;
+  // Necesitamos al menos precio y gramos por paquete para calcular €/kg
+  const hasPrice = typeof price === 'number' && !isNaN(price);
+  const hasGrams =
+    typeof packageGrams === 'number' &&
+    !isNaN(packageGrams) &&
+    packageGrams > 0;
+  const hasUnits = typeof units === 'number' && !isNaN(units) && units > 0;
 
-    if (!hasPrice && !hasGrams && !hasUnits) {
-        return `\n            <div class="mt-2 text-sm text-gray-400 italic">Sin información económica</div>\n        `;
-    }
+  if (!hasPrice && !hasGrams && !hasUnits) {
+    return `\n            <div class="mt-2 text-sm text-gray-400 italic">Sin información económica</div>\n        `;
+  }
 
-    const eurosPerKilo = (hasPrice && hasGrams) ? (price * 1000 / packageGrams) : null;
-    const eurosPerUnit = (hasPrice && hasUnits) ? (price / units) : null;
-    const gramsPerUnit = (hasGrams && hasUnits) ? (packageGrams / units) : null;
+  const eurosPerKilo =
+    hasPrice && hasGrams ? (price * 1000) / packageGrams : null;
+  const eurosPerUnit = hasPrice && hasUnits ? price / units : null;
+  const gramsPerUnit = hasGrams && hasUnits ? packageGrams / units : null;
 
-    const fmt = (v, digits=2) => (v == null ? '—' : parseFloat(v).toFixed(digits));
+  const fmt = (v, digits = 2) =>
+    v == null ? '—' : parseFloat(v).toFixed(digits);
 
-    return `\n        <div class="mt-3 bg-gray-50 p-4 rounded-md border">
+  return `\n        <div class="mt-3 bg-gray-50 p-4 rounded-md border">
             <h4 class="font-semibold text-lg text-gray-800 mb-3">Métricas Económicas</h4>
             <div class="grid grid-cols-1 gap-2 text-gray-700">
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">€/kg</span>
-                    <span class="text-2xl font-bold text-indigo-600">${eurosPerKilo != null ? '€ ' + fmt(eurosPerKilo,2) : '—'}</span>
+                    <span class="text-2xl font-bold text-indigo-600">${eurosPerKilo != null ? '€ ' + fmt(eurosPerKilo, 2) : '—'}</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">€/unidad</span>
-                    <span class="text-xl font-semibold text-indigo-600">${eurosPerUnit != null ? '€ ' + fmt(eurosPerUnit,3) : '—'}</span>
+                    <span class="text-xl font-semibold text-indigo-600">${eurosPerUnit != null ? '€ ' + fmt(eurosPerUnit, 3) : '—'}</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">g / unidad</span>
-                    <span class="text-xl font-semibold text-gray-700">${gramsPerUnit != null ? fmt(gramsPerUnit,0) + ' g' : '—'}</span>
+                    <span class="text-xl font-semibold text-gray-700">${gramsPerUnit != null ? fmt(gramsPerUnit, 0) + ' g' : '—'}</span>
                 </div>
             </div>
         </div>\n    `;
 }
 
-function _renderItemMetaPanel(item, isEditing, selectedCategoryIds, selectedStoreIds, stores, categories) {
-    // Panel visual refinado: izquierda = Información + Etiquetas; derecha = Economía
-    return `
+function _renderItemMetaPanel(
+  item,
+  isEditing,
+  selectedCategoryIds,
+  selectedStoreIds,
+  stores,
+  categories
+) {
+  // Panel visual refinado: izquierda = Información + Etiquetas; derecha = Economía
+  return `
         <div class="bg-white border border-gray-200 p-6 rounded-lg">
             <div class="grid grid-cols-1 gap-4">
                 <div class="flex gap-4">
@@ -544,7 +656,9 @@ function _renderItemMetaPanel(item, isEditing, selectedCategoryIds, selectedStor
                         <div class="bg-gray-50 p-6 rounded-lg h-full">
                             <h4 class="text-lg font-semibold text-gray-900">Economía</h4>
                             <div class="mt-4 text-base text-gray-800">
-                                ${isEditing ? `
+                                ${
+                                  isEditing
+                                    ? `
                                     <div class="space-y-3">
                                         <div>
                                             <div class="text-sm text-gray-500 mb-1">Precio</div>
@@ -556,7 +670,8 @@ function _renderItemMetaPanel(item, isEditing, selectedCategoryIds, selectedStor
                                         </div>
                                         ${_renderEconomicMetrics(item, isEditing)}
                                     </div>
-                                ` : `
+                                `
+                                    : `
                                     <div class="space-y-3">
                                         <div class="flex justify-between items-center">
                                             <span class="text-sm text-gray-600">Precio</span>
@@ -572,7 +687,8 @@ function _renderItemMetaPanel(item, isEditing, selectedCategoryIds, selectedStor
                                         </div>
                                         ${_renderEconomicMetrics(item, isEditing)}
                                     </div>
-                                `}
+                                `
+                                }
                             </div>
                         </div>
                     </div>
@@ -583,14 +699,17 @@ function _renderItemMetaPanel(item, isEditing, selectedCategoryIds, selectedStor
 }
 
 function _renderStoresField(selectedStoreIds, stores, isEditing) {
-    if (isEditing) {
-        return `
+  if (isEditing) {
+    return `
             <p class="text-xs text-gray-500 mb-2">Marca los supermercados donde sueles comprar este ingrediente. El primero marcado será el principal.</p>
             <div class="mt-1 space-y-2 max-h-32 overflow-y-auto border p-2 rounded-md">
-                ${stores.allIds.map((storeId, index) => {
+                ${stores.allIds
+                  .map((storeId, index) => {
                     const store = stores.byId[storeId];
                     const isSelected = selectedStoreIds.has(storeId);
-                    const isPrimary = selectedStoreIds.size > 0 && Array.from(selectedStoreIds)[0] === storeId;
+                    const isPrimary =
+                      selectedStoreIds.size > 0 &&
+                      Array.from(selectedStoreIds)[0] === storeId;
                     return `
                     <label class="flex items-center ${isPrimary ? 'bg-blue-50 p-2 rounded' : ''}">
                         <input type="checkbox" name="preferredStoreIds" value="${storeId}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${isSelected ? 'checked' : ''}>
@@ -600,30 +719,37 @@ function _renderStoresField(selectedStoreIds, stores, isEditing) {
                         </span>
                     </label>
                     `;
-                }).join('')}
+                  })
+                  .join('')}
             </div>
         `;
-    } else {
-        return `
+  } else {
+    return `
             <div class="mt-1 space-y-2">
-                ${selectedStoreIds.size > 0 ? Array.from(selectedStoreIds).map((storeId, index) => {
-                    const store = stores.byId[storeId];
-                    const isPrimary = index === 0;
-                    return `
+                ${
+                  selectedStoreIds.size > 0
+                    ? Array.from(selectedStoreIds)
+                        .map((storeId, index) => {
+                          const store = stores.byId[storeId];
+                          const isPrimary = index === 0;
+                          return `
                     <div class="flex items-center justify-between">
                         <div class="${isPrimary ? 'text-base font-semibold text-blue-600' : 'text-base text-gray-700'}">${store?.name || 'Supermercado desconocido'}</div>
                         ${isPrimary ? '<div class="text-xs text-blue-500 font-medium">Principal</div>' : ''}
                     </div>
                     `;
-                }).join('') : '<div class="text-sm text-gray-400 italic">Ningún supermercado seleccionado</div>'}
+                        })
+                        .join('')
+                    : '<div class="text-sm text-gray-400 italic">Ningún supermercado seleccionado</div>'
+                }
             </div>
         `;
-    }
+  }
 }
 
 function _renderStoreManager(state) {
-    const { stores } = state;
-    return `
+  const { stores } = state;
+  return `
         <div class="bg-white p-6 rounded-lg shadow-md mb-6">
             <h2 class="text-2xl font-bold mb-4">Gestor de Supermercados</h2>
             <form id="add-store-form" class="flex gap-4 mb-4">
@@ -632,7 +758,8 @@ function _renderStoreManager(state) {
             </form>
 
             <div class="space-y-2">
-                ${stores.allIds.map(storeId => {
+                ${stores.allIds
+                  .map((storeId) => {
                     const store = stores.byId[storeId];
                     return `
                         <div class="flex justify-between items-center p-2 bg-gray-50 rounded-md">
@@ -641,15 +768,16 @@ function _renderStoreManager(state) {
                                 <button data-delete-store-id="${storeId}" class="text-red-500 hover:text-red-700 font-bold px-2 text-sm">Eliminar</button>
                             </div>
                         </div>`;
-                }).join('')}
+                  })
+                  .join('')}
             </div>
         </div>
     `;
 }
 
 function _renderCategoryManager(state) {
-    const { categories } = state;
-    return `
+  const { categories } = state;
+  return `
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold mb-4">Gestor de Categorías</h2>
             <form id="add-category-form" class="flex gap-4 mb-4">
@@ -657,7 +785,8 @@ function _renderCategoryManager(state) {
                 <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm">Añadir</button>
             </form>
             <div class="space-y-2">
-                ${categories.allIds.map(categoryId => {
+                ${categories.allIds
+                  .map((categoryId) => {
                     const category = categories.byId[categoryId];
                     return `
                         <div class="flex justify-between items-center p-2 bg-gray-50 rounded-md">
@@ -666,21 +795,25 @@ function _renderCategoryManager(state) {
                                 <button data-delete-category-id="${categoryId}" class="text-red-500 hover:text-red-700 font-bold px-2 text-sm">Eliminar</button>
                             </div>
                         </div>`;
-                }).join('')}
+                  })
+                  .join('')}
             </div>
         </div>
     `;
 }
 
 function _renderCategoriesField(selectedCategoryIds, categories, isEditing) {
-    if (isEditing) {
-        return `
+  if (isEditing) {
+    return `
             <p class="text-xs text-gray-500 mb-2">Marca las categorías que mejor describan este ingrediente. La primera marcada será la principal.</p>
             <div class="mt-1 space-y-2 max-h-32 overflow-y-auto border p-2 rounded-md">
-                ${categories.allIds.map((categoryId, index) => {
+                ${categories.allIds
+                  .map((categoryId, index) => {
                     const category = categories.byId[categoryId];
                     const isSelected = selectedCategoryIds.has(categoryId);
-                    const isPrimary = selectedCategoryIds.size > 0 && Array.from(selectedCategoryIds)[0] === categoryId;
+                    const isPrimary =
+                      selectedCategoryIds.size > 0 &&
+                      Array.from(selectedCategoryIds)[0] === categoryId;
                     return `
                     <label class="flex items-center ${isPrimary ? 'bg-green-50 p-2 rounded' : ''}">
                         <input type="checkbox" name="categoryIds" value="${categoryId}" class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500" ${isSelected ? 'checked' : ''}>
@@ -690,146 +823,179 @@ function _renderCategoriesField(selectedCategoryIds, categories, isEditing) {
                         </span>
                     </label>
                     `;
-                }).join('')}
+                  })
+                  .join('')}
             </div>
         `;
-    } else {
-        return `
+  } else {
+    return `
             <div class="mt-1 space-y-2">
-                ${selectedCategoryIds.size > 0 ? Array.from(selectedCategoryIds).map((categoryId, index) => {
-                    const category = categories.byId[categoryId];
-                    const isPrimary = index === 0;
-                    return `
+                ${
+                  selectedCategoryIds.size > 0
+                    ? Array.from(selectedCategoryIds)
+                        .map((categoryId, index) => {
+                          const category = categories.byId[categoryId];
+                          const isPrimary = index === 0;
+                          return `
                     <div class="flex items-center justify-between">
                         <div class="${isPrimary ? 'text-base font-semibold text-green-600' : 'text-base text-gray-700'}">${category?.name || 'Categoría desconocida'}</div>
                         ${isPrimary ? '<div class="text-xs text-green-500 font-medium">Principal</div>' : ''}
                     </div>
                     `;
-                }).join('') : '<div class="text-sm text-gray-400 italic">Ninguna categoría seleccionada</div>'}
+                        })
+                        .join('')
+                    : '<div class="text-sm text-gray-400 italic">Ninguna categoría seleccionada</div>'
+                }
             </div>
         `;
-    }
+  }
 }
 
 function _renderTagsField(item, isEditing) {
-    if (isEditing) {
-        return `
+  if (isEditing) {
+    return `
             <div id="item-tags-container" class="mt-1 flex flex-wrap gap-2 items-center">
-                ${(item.tags || []).map(tag => `
+                ${(item.tags || [])
+                  .map(
+                    (tag) => `
                     <span data-tag="${tag}" class="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm flex items-center gap-2">
                         <span class="tag-text">${tag}</span>
                         <button type="button" class="remove-tag-btn text-red-600 hover:text-red-800 ml-2 text-sm" data-tag="${tag}" aria-label="Eliminar tag">✕</button>
                     </span>
-                `).join('')}
+                `
+                  )
+                  .join('')}
                 <input type="text" name="newTag" placeholder="Añadir tag..." class="flex-grow rounded-md border-gray-300 shadow-sm text-sm">
             </div>
         `;
-    } else {
-        return `
+  } else {
+    return `
             <div class="mt-1 flex flex-wrap gap-2 items-center">
-                ${(item.tags || []).length > 0 ? (item.tags || []).map(tag => `<span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-base font-medium">${tag}</span>`).join('') : '<span class="text-sm text-gray-400 italic">Sin tags</span>'}
+                ${(item.tags || []).length > 0 ? (item.tags || []).map((tag) => `<span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-base font-medium">${tag}</span>`).join('') : '<span class="text-sm text-gray-400 italic">Sin tags</span>'}
             </div>
         `;
-    }
+  }
 }
 
 function _renderShoppingList(state) {
-    const list = selectors.getShoppingList();
-    const categories = Object.keys(list);
-    if (categories.every(cat => list[cat].length === 0)) {
-        return `<p class="text-gray-500 text-sm">La lista está vacía.</p>`;
-    }
+  const list = selectors.getShoppingList();
+  const categories = Object.keys(list);
+  if (categories.every((cat) => list[cat].length === 0)) {
+    return `<p class="text-gray-500 text-sm">La lista está vacía.</p>`;
+  }
 
-    return categories.map(category => {
-        if (list[category].length === 0) return '';
-        return `
+  return categories
+    .map((category) => {
+      if (list[category].length === 0) return '';
+      return `
             <div class="mb-4">
                 <h3 class="font-bold text-gray-600 mb-2">${category}</h3>
                 <ul class="space-y-2">
-                    ${list[category].map(item => `
+                    ${list[category]
+                      .map(
+                        (item) => `
                         <li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
                             <span class="font-medium text-gray-800 text-sm">${item.name}</span>
                             <span class="text-base font-bold text-indigo-600">${item.totalGrams} g</span>
                         </li>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </ul>
             </div>
         `;
-    }).join('');
+    })
+    .join('');
 }
 
 // --- Main View Render Functions ---
 
 function _renderPlannerView() {
-    const state = getState();
-    const { profiles, ui, items, planner } = state;
-    const weekDates = getWeekDates(new Date(ui.activePlannerDay || new Date()));
-    // Use imported selectors
-    const nexusAnalysis = selectors.getAggregatedAnalysis();
-    const consumablesMap = new Map(items.allIds.map(id => [id, items.byId[id]]));
-    const defaultFormDate = ui.activePlannerDay || weekDates[0].toISOString().split('T')[0];
-    const activeProfile = profiles.byId[ui.activeProfileId];
-    const isDefaultProfileActive = activeProfile?.isDefault;
-    const formDisabledState = isDefaultProfileActive ? 'disabled' : '';
-    const formDisabledClasses = isDefaultProfileActive ? 'disabled:bg-gray-100 disabled:cursor-not-allowed' : '';
-    const trackedIds = activeProfile?.trackedNutrients || [];
-    const untrackedIds = items.allIds.filter(id => items.byId[id].itemType === 'definicion' && !trackedIds.includes(id));
-    const orderedNutrientIds = [...trackedIds, ...untrackedIds];
+  const state = getState();
+  const { profiles, ui, items, planner } = state;
+  const weekDates = getWeekDates(new Date(ui.activePlannerDay || new Date()));
+  // Use imported selectors
+  const nexusAnalysis = selectors.getAggregatedAnalysis();
+  const consumablesMap = new Map(
+    items.allIds.map((id) => [id, items.byId[id]])
+  );
+  const defaultFormDate =
+    ui.activePlannerDay || weekDates[0].toISOString().split('T')[0];
+  const activeProfile = profiles.byId[ui.activeProfileId];
+  const isDefaultProfileActive = activeProfile?.isDefault;
+  const formDisabledState = isDefaultProfileActive ? 'disabled' : '';
+  const formDisabledClasses = isDefaultProfileActive
+    ? 'disabled:bg-gray-100 disabled:cursor-not-allowed'
+    : '';
+  const trackedIds = activeProfile?.trackedNutrients || [];
+  const untrackedIds = items.allIds.filter(
+    (id) => items.byId[id].itemType === 'definicion' && !trackedIds.includes(id)
+  );
+  const orderedNutrientIds = [...trackedIds, ...untrackedIds];
 
-    let nexusTitle = "Análisis Personalizado";
-    if (ui.selectedCells.size > 0) {
-        const firstId = Array.from(ui.selectedCells)[0];
-        const [date, slot] = firstId.split('/');
-        const uniqueDays = new Set(Array.from(ui.selectedCells).map(id => id.split('/')[0]));
+  let nexusTitle = 'Análisis Personalizado';
+  if (ui.selectedCells.size > 0) {
+    const firstId = Array.from(ui.selectedCells)[0];
+    const [date, slot] = firstId.split('/');
+    const uniqueDays = new Set(
+      Array.from(ui.selectedCells).map((id) => id.split('/')[0])
+    );
 
-        if (ui.selectedCells.size === 1) {
-            const d = new Date(`${date}T12:00:00`);
-            const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
-            nexusTitle = `Análisis: ${dayName} (${SLOT_NAMES[slot]})`;
-        } else if (uniqueDays.size === 1) {
-            const d = new Date(`${date}T12:00:00`);
-            const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
-            nexusTitle = `Análisis: ${dayName} (${ui.selectedCells.size} comidas)`;
-        } else {
-            nexusTitle = `Análisis Personalizado (${ui.selectedCells.size} items en ${uniqueDays.size} días)`;
-        }
+    if (ui.selectedCells.size === 1) {
+      const d = new Date(`${date}T12:00:00`);
+      const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
+      nexusTitle = `Análisis: ${dayName} (${SLOT_NAMES[slot]})`;
+    } else if (uniqueDays.size === 1) {
+      const d = new Date(`${date}T12:00:00`);
+      const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
+      nexusTitle = `Análisis: ${dayName} (${ui.selectedCells.size} comidas)`;
     } else {
-        nexusTitle = "Sin Selección";
+      nexusTitle = `Análisis Personalizado (${ui.selectedCells.size} items en ${uniqueDays.size} días)`;
     }
+  } else {
+    nexusTitle = 'Sin Selección';
+  }
 
-    const renderNexusCalendar = () => {
-        const headerHtml = _renderNexusHeader(ui);
-        const gridHtml = ui.nexusView === 'week'
-            ? _renderNexusWeekGrid(ui, planner, consumablesMap)
-            : _renderNexusMonthGrid(ui, planner, consumablesMap);
-        return headerHtml + gridHtml;
-    };
-function _renderShoppingList(state) {
+  const renderNexusCalendar = () => {
+    const headerHtml = _renderNexusHeader(ui);
+    const gridHtml =
+      ui.nexusView === 'week'
+        ? _renderNexusWeekGrid(ui, planner, consumablesMap)
+        : _renderNexusMonthGrid(ui, planner, consumablesMap);
+    return headerHtml + gridHtml;
+  };
+  function _renderShoppingList(state) {
     const list = selectors.getShoppingList();
     const categories = Object.keys(list);
-    if (categories.every(cat => list[cat].length === 0)) {
-        return `<p class="text-gray-500 text-sm">La lista está vacía.</p>`;
+    if (categories.every((cat) => list[cat].length === 0)) {
+      return `<p class="text-gray-500 text-sm">La lista está vacía.</p>`;
     }
 
-    return categories.map(category => {
+    return categories
+      .map((category) => {
         if (list[category].length === 0) return '';
         return `
             <div class="mb-4">
                 <h3 class="font-bold text-gray-600 mb-2">${category}</h3>
                 <ul class="space-y-2">
-                    ${list[category].map(item => `
+                    ${list[category]
+                      .map(
+                        (item) => `
                         <li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
                             <span class="font-medium text-gray-800 text-sm">${item.name}</span>
                             <span class="text-base font-bold text-indigo-600">${item.totalGrams} g</span>
                         </li>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </ul>
             </div>
         `;
-    }).join('');
-}
+      })
+      .join('');
+  }
 
-    return `
+  return `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-1 space-y-8">
                 <!-- Centro de Mando movido a 'Mis Ajustes' -->
@@ -845,22 +1011,46 @@ function _renderShoppingList(state) {
                     <h2 class="text-2xl font-bold mb-4">Lienzo de Planificación</h2>
                     <form id="planner-assignment-form" class="mb-8 p-4 border rounded-md bg-gray-50 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                         <div class="md:col-span-2"><label for="consumableId" class="block text-sm font-medium text-gray-700">Añadir Comida</label><select name="consumableId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm">
-                            <optgroup label="Recetas">${items.allIds.filter(id => items.byId[id].itemType === 'receta').map(id => `<option value="${id}">${items.byId[id].name}</option>`).join('')}</optgroup>
-                            <optgroup label="Ingredientes">${items.allIds.filter(id => items.byId[id].itemType === 'ingrediente').map(id => `<option value="${id}">${items.byId[id].name}</option>`).join('')}</optgroup>
+                            <optgroup label="Recetas">${items.allIds
+                              .filter(
+                                (id) => items.byId[id].itemType === 'receta'
+                              )
+                              .map(
+                                (id) =>
+                                  `<option value="${id}">${items.byId[id].name}</option>`
+                              )
+                              .join('')}</optgroup>
+                            <optgroup label="Ingredientes">${items.allIds
+                              .filter(
+                                (id) =>
+                                  items.byId[id].itemType === 'ingrediente'
+                              )
+                              .map(
+                                (id) =>
+                                  `<option value="${id}">${items.byId[id].name}</option>`
+                              )
+                              .join('')}</optgroup>
                         </select></div>
                         <div><label for="date" class="block text-sm font-medium text-gray-700">Fecha</label><input type="date" name="date" value="${defaultFormDate}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"></div>
-                        <div><label for="slot" class="block text-sm font-medium text-gray-700">Franja</label><select name="slot" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm">${SLOTS.map(s => `<option value="${s}">${SLOT_NAMES[s]}</option>`).join('')}</select></div>
+                        <div><label for="slot" class="block text-sm font-medium text-gray-700">Franja</label><select name="slot" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm">${SLOTS.map((s) => `<option value="${s}">${SLOT_NAMES[s]}</option>`).join('')}</select></div>
                         <div><label for="grams" class="block text-sm font-medium text-gray-700">Gramos</label><input type="number" min="0" name="grams" placeholder="ej: 150" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"></div>
                         <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">Asignar</button>
                     </form>
                     <div class="space-y-2 mt-8">
-                    ${getWeekDates(new Date(ui.activePlannerDay || new Date())).map(date => {
+                    ${getWeekDates(new Date(ui.activePlannerDay || new Date()))
+                      .map((date) => {
                         const dateString = date.toISOString().split('T')[0];
                         const panelId = `panel-${dateString}`;
                         const isActive = dateString === ui.activePlannerDay;
                         const dayPlan = planner[dateString];
-                        const dayAnalysis = selectors.getDayAnalysis(dateString);
-                        const statusColors = { success: 'bg-green-500', warning: 'bg-yellow-500', danger: 'bg-red-500', info: 'bg-blue-500' };
+                        const dayAnalysis =
+                          selectors.getDayAnalysis(dateString);
+                        const statusColors = {
+                          success: 'bg-green-500',
+                          warning: 'bg-yellow-500',
+                          danger: 'bg-red-500',
+                          info: 'bg-blue-500',
+                        };
 
                         return `
                         <div class="border rounded-lg overflow-hidden bg-gray-50 shadow-sm">
@@ -870,22 +1060,24 @@ function _renderShoppingList(state) {
                                     <div>
                                         <h4 class="font-semibold mb-2 text-gray-800">Comidas Planificadas</h4>
                                         <div class="space-y-2 text-sm">
-                                        ${SLOTS.map(slot => {
-                                            const itemsInSlot = dayPlan?.[slot] || [];
-                                            return `<div><h5 class="font-bold text-gray-500 capitalize">${SLOT_NAMES[slot]}</h5>${itemsInSlot.length > 0 ? itemsInSlot.map((item, index) => `<p class="pl-2 flex justify-between items-center group">${(consumablesMap.get(item.id) || {name:'?'}).name} <span class="text-gray-500">(${item.grams}g)</span><button class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity ml-2 font-bold text-sm" data-delete-planned-meal data-date="${dateString}" data-slot="${slot}" data-item-id="${item.id}" data-item-index="${index}" title="Eliminar comida">✕</button></p>`).join('') : '<p class="pl-2 text-gray-400 italic">Vacío</p>'}</div>`;
+                                        ${SLOTS.map((slot) => {
+                                          const itemsInSlot =
+                                            dayPlan?.[slot] || [];
+                                          return `<div><h5 class="font-bold text-gray-500 capitalize">${SLOT_NAMES[slot]}</h5>${itemsInSlot.length > 0 ? itemsInSlot.map((item, index) => `<p class="pl-2 flex justify-between items-center group">${(consumablesMap.get(item.id) || { name: '?' }).name} <span class="text-gray-500">(${item.grams}g)</span><button class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity ml-2 font-bold text-sm" data-delete-planned-meal data-date="${dateString}" data-slot="${slot}" data-item-id="${item.id}" data-item-index="${index}" title="Eliminar comida">✕</button></p>`).join('') : '<p class="pl-2 text-gray-400 italic">Vacío</p>'}</div>`;
                                         }).join('')}
                                         </div>
                                     </div>
                                     <div>
                                         <h4 class="font-semibold mb-2 text-gray-800">Panel de Control Diario</h4>
                                         <div class="space-y-2 text-sm">
-                                        ${dayAnalysis.length > 0 ? dayAnalysis.map(nutrient => `<div><div class="flex justify-between font-medium"><span>${nutrient.name}</span><span>${nutrient.value}${nutrient.unit} ${nutrient.target ? `/ ${nutrient.target.toFixed(0)}${nutrient.unit}` : ''}</span></div><div class="progress-bar mt-1 h-2"><div class="progress-bar-inner ${statusColors[nutrient.status]}" style="width: ${nutrient.percentage}%;"></div></div></div>`).join('') : '<p class="text-gray-400 italic">Sin datos para analizar</p>'}
+                                        ${dayAnalysis.length > 0 ? dayAnalysis.map((nutrient) => `<div><div class="flex justify-between font-medium"><span>${nutrient.name}</span><span>${nutrient.value}${nutrient.unit} ${nutrient.target ? `/ ${nutrient.target.toFixed(0)}${nutrient.unit}` : ''}</span></div><div class="progress-bar mt-1 h-2"><div class="progress-bar-inner ${statusColors[nutrient.status]}" style="width: ${nutrient.percentage}%;"></div></div></div>`).join('') : '<p class="text-gray-400 italic">Sin datos para analizar</p>'}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>`;
-                    }).join('')}
+                      })
+                      .join('')}
                     </div>
                 </div>
 
@@ -895,11 +1087,21 @@ function _renderShoppingList(state) {
                     <div class="mt-6">
                         <h3 class="text-xl font-bold mb-4">${nexusTitle}</h3>
                         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        ${nexusAnalysis.length > 0 ? nexusAnalysis.map(nutrient => {
-                            const statusColors = { success: 'text-green-500', warning: 'text-yellow-500', danger: 'text-red-500', info: 'text-blue-500' };
-                            const circumference = 2 * Math.PI * 45;
-                            const offset = circumference - (nutrient.percentage / 100) * circumference;
-                            return `
+                        ${
+                          nexusAnalysis.length > 0
+                            ? nexusAnalysis
+                                .map((nutrient) => {
+                                  const statusColors = {
+                                    success: 'text-green-500',
+                                    warning: 'text-yellow-500',
+                                    danger: 'text-red-500',
+                                    info: 'text-blue-500',
+                                  };
+                                  const circumference = 2 * Math.PI * 45;
+                                  const offset =
+                                    circumference -
+                                    (nutrient.percentage / 100) * circumference;
+                                  return `
                             <div class="flex flex-col items-center p-4 rounded-lg bg-gray-50">
                                 <div class="relative w-24 h-24">
                                     <svg class="w-full h-full" viewBox="0 0 100 100">
@@ -914,7 +1116,10 @@ function _renderShoppingList(state) {
                                 </div>
                             </div>
                             `;
-                        }).join('') : '<p class="col-span-full text-gray-500 italic">Selecciona uno o más elementos del calendario para ver el análisis agregado.</p>'}
+                                })
+                                .join('')
+                            : '<p class="col-span-full text-gray-500 italic">Selecciona uno o más elementos del calendario para ver el análisis agregado.</p>'
+                        }
                         </div>
                     </div>
                 </div>
@@ -924,11 +1129,16 @@ function _renderShoppingList(state) {
 }
 
 function _renderItemLibrary() {
-    const state = getState();
-    const { items, stores } = state;
-    const libraryItems = items.allIds.filter(id => items.byId[id].itemType !== 'definicion' && items.byId[id].type !== 'nutriente' && items.byId[id].itemType !== 'receta');
+  const state = getState();
+  const { items, stores } = state;
+  const libraryItems = items.allIds.filter(
+    (id) =>
+      items.byId[id].itemType !== 'definicion' &&
+      items.byId[id].type !== 'nutriente' &&
+      items.byId[id].itemType !== 'receta'
+  );
 
-    return `
+  return `
     <div class="bg-white p-6 rounded-lg shadow-md mb-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold">Biblioteca de Items</h2>
@@ -937,23 +1147,29 @@ function _renderItemLibrary() {
                 </button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                ${libraryItems.map(id => {
+                ${libraryItems
+                  .map((id) => {
                     const item = items.byId[id];
 
                     return `
                         <div data-action="${item.itemType === 'receta' ? 'view-recipe' : 'view-item'}" data-${item.itemType === 'receta' ? 'recipe' : 'item'}-id="${item.id}" class="border rounded-lg p-4 flex flex-col justify-between hover:shadow-lg hover:border-indigo-300 transition-all cursor-pointer min-h-32">
-                            ${item.itemType === 'receta' ? `
+                            ${
+                              item.itemType === 'receta'
+                                ? `
                                 <div>
                                     <h3 class="font-bold">${item.name}</h3>
                                 </div>
-                            ` : `
+                            `
+                                : `
                                 <div>
                                     <h3 class="font-bold">${item.name}</h3>
                                 </div>
-                            `}
+                            `
+                            }
                         </div>
                     `;
-                }).join('')}
+                  })
+                  .join('')}
             </div>
     </div>
 
@@ -971,14 +1187,16 @@ function _renderItemLibrary() {
 }
 
 function _renderRecipeLibrary() {
-    const state = getState();
-    const { items } = state;
-    const recipes = items.allIds.filter(id => items.byId[id].itemType === 'receta');
+  const state = getState();
+  const { items } = state;
+  const recipes = items.allIds.filter(
+    (id) => items.byId[id].itemType === 'receta'
+  );
 
-    // Helper: Compositor de Recetas (movido desde Planner)
-    function _renderRecipeComposer(state) {
-        const { ui, items } = state;
-        return `
+  // Helper: Compositor de Recetas (movido desde Planner)
+  function _renderRecipeComposer(state) {
+    const { ui, items } = state;
+    return `
         <div class="bg-white p-6 rounded-lg shadow-md mb-6">
             <h2 class="text-2xl font-bold mb-4">Compositor de Recetas</h2>
             <form id="recipe-form" class="space-y-3">
@@ -988,7 +1206,16 @@ function _renderRecipeLibrary() {
                         <div class="flex-grow">
                             <label class="block text-xs font-medium text-gray-700">Ingrediente</label>
                             <select name="ingredientSelect" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
-                                ${items.allIds.filter(id => items.byId[id].itemType === 'ingrediente').map(id => `<option value="${id}">${items.byId[id].name}</option>`).join('')}
+                                ${items.allIds
+                                  .filter(
+                                    (id) =>
+                                      items.byId[id].itemType === 'ingrediente'
+                                  )
+                                  .map(
+                                    (id) =>
+                                      `<option value="${id}">${items.byId[id].name}</option>`
+                                  )
+                                  .join('')}
                             </select>
                         </div>
                         <div>
@@ -999,25 +1226,28 @@ function _renderRecipeLibrary() {
                     </div>
                 </div>
                 <div class="max-h-32 overflow-y-auto space-y-1 text-sm">
-                    ${ui.recipeBuilder.ingredients.map(builderIng => {
+                    ${ui.recipeBuilder.ingredients
+                      .map((builderIng) => {
                         const ingDetails = items.byId[builderIng.ingredientId];
                         return `<div class="flex justify-between items-center bg-gray-100 p-1 rounded-md"><span>${ingDetails?.name || '?'}</span><span>${builderIng.grams}g</span></div>`;
-                    }).join('')}
+                      })
+                      .join('')}
                 </div>
                 <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700">Guardar Receta</button>
             </form>
         </div>
         `;
-    }
+  }
 
-    return `
+  return `
         ${_renderRecipeComposer(state)}
         <div class="bg-white p-6 rounded-lg shadow-md">
             <div class="mb-6">
                 <h2 class="text-2xl font-bold">Biblioteca de Recetas</h2>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                ${recipes.map(id => {
+                ${recipes
+                  .map((id) => {
                     const recipe = items.byId[id];
 
                     return `
@@ -1027,10 +1257,13 @@ function _renderRecipeLibrary() {
                             </div>
                         </div>
                     `;
-                }).join('')}
+                  })
+                  .join('')}
             </div>
 
-            ${recipes.length === 0 ? `
+            ${
+              recipes.length === 0
+                ? `
                 <div class="text-center py-12">
                     <div class="text-gray-400 text-6xl mb-4">+</div>
                     <h3 class="text-lg font-semibold text-gray-600 mb-2">No hay recetas aún</h3>
@@ -1039,51 +1272,60 @@ function _renderRecipeLibrary() {
                         + Crear Primera Receta
                     </button>
                 </div>
-            ` : ''}
+            `
+                : ''
+            }
         </div>
     `;
 }
 
 function _renderRecipeDetailView(recipeId) {
-    const state = getState();
-    const { items, profiles, ui } = state;
+  const state = getState();
+  const { items, profiles, ui } = state;
 
-    const recipe = items.byId[recipeId];
-    if (!recipe || recipe.itemType !== 'receta') {
-        return `<p class="text-red-500">Error: Receta no encontrada.</p>`;
-    }
+  const recipe = items.byId[recipeId];
+  if (!recipe || recipe.itemType !== 'receta') {
+    return `<p class="text-red-500">Error: Receta no encontrada.</p>`;
+  }
 
-    // Determinar si estamos en modo edición
-    const isEditing = ui.recipeEditor.isEditing && ui.recipeEditor.recipeId === recipeId;
+  // Determinar si estamos en modo edición
+  const isEditing =
+    ui.recipeEditor.isEditing && ui.recipeEditor.recipeId === recipeId;
 
-    // Usar ingredientes del editor si estamos editando, sino los de la receta
-    const ingredientsToShow = isEditing ? ui.recipeEditor.ingredients : recipe.ingredients;
+  // Usar ingredientes del editor si estamos editando, sino los de la receta
+  const ingredientsToShow = isEditing
+    ? ui.recipeEditor.ingredients
+    : recipe.ingredients;
 
-    // CÁLCULO DE RACIONES
-    const racionesToShow = getRacionesToShow(recipe, ui);
+  // CÁLCULO DE RACIONES
+  const racionesToShow = getRacionesToShow(recipe, ui);
 
-    // Obtener nutrientes tracked del perfil activo
-    const activeProfile = profiles.byId[ui.activeProfileId];
-    const trackedNutrients = activeProfile?.trackedNutrients || [];
+  // Obtener nutrientes tracked del perfil activo
+  const activeProfile = profiles.byId[ui.activeProfileId];
+  const trackedNutrients = activeProfile?.trackedNutrients || [];
 
-    // Calcular totales usando SIEMPRE el motor optimizado
-    let totals = {};
-    let totalGrams = 0;
+  // Calcular totales usando SIEMPRE el motor optimizado
+  let totals = {};
+  let totalGrams = 0;
 
-    const recipeToCalculate = isEditing && ui.recipeEditor?.ingredients
-        ? { ingredients: ui.recipeEditor.ingredients }
-        : recipe;
+  const recipeToCalculate =
+    isEditing && ui.recipeEditor?.ingredients
+      ? { ingredients: ui.recipeEditor.ingredients }
+      : recipe;
 
-    // Use imported selector
-    const { computedTotals, totalGrams: computedGrams } = selectors.calculateRecipeTotals(recipeToCalculate, items.byId);
+  // Use imported selector
+  const { computedTotals, totalGrams: computedGrams } =
+    selectors.calculateRecipeTotals(recipeToCalculate, items.byId);
 
-    // Convertir SIEMPRE con PRECISION_FACTOR para compatibilidad (used in the visualization logic below)
-    for (const nutrientId in computedTotals) {
-        totals[nutrientId] = Math.round(computedTotals[nutrientId] * PRECISION_FACTOR);
-    }
-    totalGrams = computedGrams;
+  // Convertir SIEMPRE con PRECISION_FACTOR para compatibilidad (used in the visualization logic below)
+  for (const nutrientId in computedTotals) {
+    totals[nutrientId] = Math.round(
+      computedTotals[nutrientId] * PRECISION_FACTOR
+    );
+  }
+  totalGrams = computedGrams;
 
-    return `
+  return `
         <div class="bg-white p-6 rounded-lg shadow-md">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <div class="flex items-center gap-4">
@@ -1111,48 +1353,90 @@ function _renderRecipeDetailView(recipeId) {
                         <button id="per-100g-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Por 100g</button>
                     </div>
 
-                    <div class="space-y-2 text-sm">${trackedNutrients.length > 0 ? trackedNutrients.map(nutrientId => {
-                            const nutrient = items.byId[nutrientId];
-                            if (!nutrient) return '';
+                    <div class="space-y-2 text-sm">${
+                      trackedNutrients.length > 0
+                        ? trackedNutrients
+                            .map((nutrientId) => {
+                              const nutrient = items.byId[nutrientId];
+                              if (!nutrient) return '';
 
-                            // Solicitar datos correctamente al motor optimizado
-                            const rawValue = totals[nutrientId] || 0;
-                            const totalValue = rawValue / PRECISION_FACTOR; // Convertir del motor
-                            // CÁLCULOS NUTRICIONALES POR RACIÓN Y POR 100G
-                            const per100gValue = totalGrams > 0 ? (totalValue * 100) / totalGrams : 0;
-                            const perServingValue = totalValue / racionesToShow; // NUEVO: Valor total ÷ raciones
+                              // Solicitar datos correctamente al motor optimizado
+                              const rawValue = totals[nutrientId] || 0;
+                              const totalValue = rawValue / PRECISION_FACTOR; // Convertir del motor
+                              // CÁLCULOS NUTRICIONALES POR RACIÓN Y POR 100G
+                              const per100gValue =
+                                totalGrams > 0
+                                  ? (totalValue * 100) / totalGrams
+                                  : 0;
+                              const perServingValue =
+                                totalValue / racionesToShow; // NUEVO: Valor total ÷ raciones
 
-                            // Formatear para display
-                            const per100gDisplay = parseFloat(per100gValue.toFixed(2));
-                            const perServingDisplay = parseFloat(perServingValue.toFixed(2)); // NUEVO: Display por ración
+                              // Formatear para display
+                              const per100gDisplay = parseFloat(
+                                per100gValue.toFixed(2)
+                              );
+                              const perServingDisplay = parseFloat(
+                                perServingValue.toFixed(2)
+                              ); // NUEVO: Display por ración
 
-                            // Obtener objetivo nutricional
-                            const activeTargets = selectors.getActiveNutritionalTargets();
-                            const targetInfo = activeTargets[nutrientId];
-                            const targetValue = targetInfo ? targetInfo.finalValue : null;
-                            const targetDisplay = targetValue != null ? ` / ${targetValue.toFixed(0)}${nutrient.unit}` : '';
+                              // Obtener objetivo nutricional
+                              const activeTargets =
+                                selectors.getActiveNutritionalTargets();
+                              const targetInfo = activeTargets[nutrientId];
+                              const targetValue = targetInfo
+                                ? targetInfo.finalValue
+                                : null;
+                              const targetDisplay =
+                                targetValue != null
+                                  ? ` / ${targetValue.toFixed(0)}${nutrient.unit}`
+                                  : '';
 
-                            // Calcular porcentaje y status para la barra
-                            const percentage100g = targetValue != null && targetValue > 0 ? Math.min(100, Math.round((per100gDisplay / targetValue) * 100)) : 0;
-                            const percentagePerServing = targetValue != null && targetValue > 0 ? Math.min(100, Math.round((perServingDisplay / targetValue) * 100)) : 0; // NUEVO: Por ración
+                              // Calcular porcentaje y status para la barra
+                              const percentage100g =
+                                targetValue != null && targetValue > 0
+                                  ? Math.min(
+                                      100,
+                                      Math.round(
+                                        (per100gDisplay / targetValue) * 100
+                                      )
+                                    )
+                                  : 0;
+                              const percentagePerServing =
+                                targetValue != null && targetValue > 0
+                                  ? Math.min(
+                                      100,
+                                      Math.round(
+                                        (perServingDisplay / targetValue) * 100
+                                      )
+                                    )
+                                  : 0; // NUEVO: Por ración
 
-                            let status100g = 'info';
-                            let statusPerServing = 'info'; // NUEVO: Status por ración
-                            if (targetValue != null) {
+                              let status100g = 'info';
+                              let statusPerServing = 'info'; // NUEVO: Status por ración
+                              if (targetValue != null) {
                                 // Status para 100g
-                                if (per100gDisplay > targetValue * 1.1) status100g = 'danger';
-                                else if (percentage100g >= 90) status100g = 'success';
+                                if (per100gDisplay > targetValue * 1.1)
+                                  status100g = 'danger';
+                                else if (percentage100g >= 90)
+                                  status100g = 'success';
                                 else status100g = 'warning';
 
                                 // Status para por ración (NUEVO)
-                                if (perServingDisplay > targetValue * 1.1) statusPerServing = 'danger';
-                                else if (percentagePerServing >= 90) statusPerServing = 'success';
+                                if (perServingDisplay > targetValue * 1.1)
+                                  statusPerServing = 'danger';
+                                else if (percentagePerServing >= 90)
+                                  statusPerServing = 'success';
                                 else statusPerServing = 'warning';
-                            }
+                              }
 
-                            const statusColors = { success: 'bg-green-500', warning: 'bg-yellow-500', danger: 'bg-red-500', info: 'bg-blue-500' };
+                              const statusColors = {
+                                success: 'bg-green-500',
+                                warning: 'bg-yellow-500',
+                                danger: 'bg-red-500',
+                                info: 'bg-blue-500',
+                              };
 
-                            return `
+                              return `
                                 <div class="space-y-2">
                                     <div class="flex justify-between font-medium">
                                         <span class="text-gray-700">${nutrient.name}</span>
@@ -1166,12 +1450,19 @@ function _renderRecipeDetailView(recipeId) {
                                               data-status100g="${status100g}"
                                               data-statusperserving="${statusPerServing}">${perServingDisplay.toFixed(0)}${nutrient.unit}${targetDisplay}</span>
                                     </div>
-                                    ${targetValue != null ? `<div class="progress-bar mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    ${
+                                      targetValue != null
+                                        ? `<div class="progress-bar mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                                         <div class="progress-bar-inner h-full ${statusColors[statusPerServing]} transition-all duration-300" style="width: ${percentagePerServing}%;"></div>
-                                    </div>` : ''}
+                                    </div>`
+                                        : ''
+                                    }
                                 </div>
                             `;
-                        }).join('') : '<div class="text-gray-500 italic">No hay nutrientes configurados</div>'}
+                            })
+                            .join('')
+                        : '<div class="text-gray-500 italic">No hay nutrientes configurados</div>'
+                    }
                     </div>
                 </div>
 
@@ -1190,14 +1481,23 @@ function _renderRecipeDetailView(recipeId) {
                             <span class="text-lg font-semibold text-gray-800">${racionesToShow === 1 ? 'persona' : 'personas'}</span>
                         </div>
 
-                        ${isEditing ? `
+                        ${
+                          isEditing
+                            ? `
                             <div class="flex gap-3 mb-3">
                                 <select id="ingredient-select" class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                                     <option value="">Seleccionar ingrediente...</option>
-                                    ${items.allIds.filter(id => items.byId[id].itemType === 'ingrediente').map(id => {
+                                    ${items.allIds
+                                      .filter(
+                                        (id) =>
+                                          items.byId[id].itemType ===
+                                          'ingrediente'
+                                      )
+                                      .map((id) => {
                                         const ingredient = items.byId[id];
                                         return `<option value="${id}">${ingredient.name}</option>`;
-                                    }).join('')}
+                                      })
+                                      .join('')}
                                 </select>
                                 <input type="number" id="ingredient-grams" min="1" placeholder="Gramos"
                                        class="w-28 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
@@ -1208,52 +1508,75 @@ function _renderRecipeDetailView(recipeId) {
                                     Añadir Ingrediente
                                 </button>
                             </div>
-                        ` : ''}
+                        `
+                            : ''
+                        }
                     </div>
 
                     <div class="space-y-3">
-                        ${ingredientsToShow && ingredientsToShow.length > 0 ? ingredientsToShow.map((ingredient, index) => {
-                            return _renderRecipeIngredient(ingredient, index, items, isEditing, totalGrams);
-                        }).join('') : `
+                        ${
+                          ingredientsToShow && ingredientsToShow.length > 0
+                            ? ingredientsToShow
+                                .map((ingredient, index) => {
+                                  return _renderRecipeIngredient(
+                                    ingredient,
+                                    index,
+                                    items,
+                                    isEditing,
+                                    totalGrams
+                                  );
+                                })
+                                .join('')
+                            : `
                             <div class="text-center py-8 text-gray-500">
                                 <p>${isEditing ? 'No hay ingredientes en esta receta' : 'Esta receta no tiene ingredientes'}</p>
                                 ${isEditing ? '<p class="text-sm">Haz clic en "Añadir Ingrediente" para empezar</p>' : ''}
                             </div>
-                        `}
+                        `
+                        }
                     </div>
                 </div>
 
-                ${isEditing ? `
-                    ` : ''}
+                ${
+                  isEditing
+                    ? `
+                    `
+                    : ''
+                }
             </div>
         </div>
     `;
 }
 
 function _renderItemDetailView(itemId) {
-    const state = getState();
-    const item = state.items.byId[itemId];
-    if (!item) {
-        return `<p class="text-red-500">Error: Item no encontrado.</p>`;
-    }
-    const { items, profiles, ui, stores, categories } = state;
-    const activeProfile = profiles.byId[ui.activeProfileId];
-    const trackedNutrients = activeProfile?.trackedNutrients || [];
-    const selectedStoreIds = new Set(item.logistics?.preferredStoreIds || []);
-    const selectedCategoryIds = new Set(item.categoryIds || []);
+  const state = getState();
+  const item = state.items.byId[itemId];
+  if (!item) {
+    return `<p class="text-red-500">Error: Item no encontrado.</p>`;
+  }
+  const { items, profiles, ui, stores, categories } = state;
+  const activeProfile = profiles.byId[ui.activeProfileId];
+  const trackedNutrients = activeProfile?.trackedNutrients || [];
+  const selectedStoreIds = new Set(item.logistics?.preferredStoreIds || []);
+  const selectedCategoryIds = new Set(item.categoryIds || []);
 
-    // Detectar si está en modo edición
-    const isEditing = ui.itemEditor?.isEditing && ui.itemEditor?.itemId === itemId;
+  // Detectar si está en modo edición
+  const isEditing =
+    ui.itemEditor?.isEditing && ui.itemEditor?.itemId === itemId;
 
-    return `
+  return `
         <div class="bg-white p-6 rounded-lg shadow-md">
             ${isEditing ? `<form id="item-detail-form" data-item-id="${itemId}">` : ''}
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    ${isEditing ? `
+                    ${
+                      isEditing
+                        ? `
                         <input type="text" name="name" value="${item.name}" placeholder="Nombre del Item" required class="block w-1/2 text-2xl font-bold rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    ` : `
+                    `
+                        : `
                         <h1 class="text-2xl font-bold text-gray-800">${item.name}</h1>
-                    `}
+                    `
+                    }
                     <div>
                         ${_renderItemActionButtons(isEditing, itemId)}
                     </div>
@@ -1264,55 +1587,104 @@ function _renderItemDetailView(itemId) {
                         <h3 class="text-lg font-semibold mb-4 text-gray-800">Información Nutricional</h3>
                         <h4 class="font-semibold text-gray-700 mb-3">Valores por 100g:</h4>
                         <div class="space-y-2">
-                            ${trackedNutrients.map(nutrientId => {
+                            ${trackedNutrients
+                              .map((nutrientId) => {
                                 const definition = items.byId[nutrientId];
                                 if (!definition) return '';
 
                                 let value100g = 0;
-                                if (item.itemType === 'ingrediente' && item.nutrients[nutrientId]) {
-                                    value100g = item.nutrients[nutrientId];
-                                } else if (item.itemType === 'receta' && item.computed?.totals[nutrientId] && item.computed?.totalGrams > 0) {
-                                    const scalingFactor = 100 / item.computed.totalGrams;
-                                    // computed.totals stores values already divided by PRECISION_FACTOR (see selectors.js)
-                                    value100g = item.computed.totals[nutrientId] * scalingFactor;
+                                if (
+                                  item.itemType === 'ingrediente' &&
+                                  item.nutrients[nutrientId]
+                                ) {
+                                  value100g = item.nutrients[nutrientId];
+                                } else if (
+                                  item.itemType === 'receta' &&
+                                  item.computed?.totals[nutrientId] &&
+                                  item.computed?.totalGrams > 0
+                                ) {
+                                  const scalingFactor =
+                                    100 / item.computed.totalGrams;
+                                  // computed.totals stores values already divided by PRECISION_FACTOR (see selectors.js)
+                                  value100g =
+                                    item.computed.totals[nutrientId] *
+                                    scalingFactor;
                                 }
 
-                                const coreMacros = ['calories', 'proteins', 'fats', 'carbs'];
-                                if (!value100g && !coreMacros.includes(nutrientId)) return '';
+                                const coreMacros = [
+                                  'calories',
+                                  'proteins',
+                                  'fats',
+                                  'carbs',
+                                ];
+                                if (
+                                  !value100g &&
+                                  !coreMacros.includes(nutrientId)
+                                )
+                                  return '';
 
                                 // Aplicar formato unificado igual que panel diario/recetas
-                                const activeTargets = selectors.getActiveNutritionalTargets();
+                                const activeTargets =
+                                  selectors.getActiveNutritionalTargets();
                                 const targetInfo = activeTargets[nutrientId];
-                                const targetValue = targetInfo ? targetInfo.finalValue : null;
+                                const targetValue = targetInfo
+                                  ? targetInfo.finalValue
+                                  : null;
 
                                 // Cálculo de status (igual que panel diario)
-                                const percentage = targetValue && targetValue > 0 ? Math.min(100, Math.round((value100g / targetValue) * 100)) : 0;
+                                const percentage =
+                                  targetValue && targetValue > 0
+                                    ? Math.min(
+                                        100,
+                                        Math.round(
+                                          (value100g / targetValue) * 100
+                                        )
+                                      )
+                                    : 0;
                                 let status = 'info';
                                 if (targetValue != null) {
-                                    if (value100g > targetValue * 1.1) status = 'danger';
-                                    else if (percentage >= 90) status = 'success';
-                                    else status = 'warning';
+                                  if (value100g > targetValue * 1.1)
+                                    status = 'danger';
+                                  else if (percentage >= 90) status = 'success';
+                                  else status = 'warning';
                                 }
 
-                                const statusColors = { success: 'bg-green-500', warning: 'bg-yellow-500', danger: 'bg-red-500', info: 'bg-blue-500' };
-                                const targetDisplay = targetValue ? ` / ${targetValue.toFixed(0)}${definition.unit}` : '';
+                                const statusColors = {
+                                  success: 'bg-green-500',
+                                  warning: 'bg-yellow-500',
+                                  danger: 'bg-red-500',
+                                  info: 'bg-blue-500',
+                                };
+                                const targetDisplay = targetValue
+                                  ? ` / ${targetValue.toFixed(0)}${definition.unit}`
+                                  : '';
 
                                 return `
                                 <div class="space-y-2">
                                     <div class="flex justify-between font-medium">
                                         <span class="text-gray-700">${definition.name}</span>
-                                        ${isEditing && item.itemType === 'ingrediente' ? `
+                                        ${
+                                          isEditing &&
+                                          item.itemType === 'ingrediente'
+                                            ? `
                                         <input type="number" name="nutrient_${nutrientId}" value="${value100g.toFixed(1)}" step="0.1" class="w-20 text-right rounded border-gray-300 text-sm">
-                                    ` : `
+                                    `
+                                            : `
                                         <span class="font-bold text-gray-900">${value100g.toFixed(0)}${definition.unit}${targetDisplay}</span>
-                                    `}
+                                    `
+                                        }
                                     </div>
-                                    ${targetValue ? `<div class="progress-bar mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    ${
+                                      targetValue
+                                        ? `<div class="progress-bar mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                                         <div class="progress-bar-inner h-full ${statusColors[status]} transition-all duration-300" style="width: ${Math.min(100, percentage)}%;"></div>
-                                    </div>` : ''}
+                                    </div>`
+                                        : ''
+                                    }
                                 </div>
                                 `;
-                            }).join('')}
+                              })
+                              .join('')}
                         </div>
                     </div>
 
@@ -1324,56 +1696,68 @@ function _renderItemDetailView(itemId) {
 }
 
 function _renderDeleteItemModal() {
-    const state = getState();
-    const { ui, items } = state;
-    if (!ui.deleteItemModal.isOpen) return '';
+  const state = getState();
+  const { ui, items } = state;
+  if (!ui.deleteItemModal.isOpen) return '';
 
-    const item = items.byId[ui.deleteItemModal.itemId];
-    const dependentRecipes = ui.deleteItemModal.dependentRecipes;
-    const isRecipe = item?.itemType === 'receta';
+  const item = items.byId[ui.deleteItemModal.itemId];
+  const dependentRecipes = ui.deleteItemModal.dependentRecipes;
+  const isRecipe = item?.itemType === 'receta';
 
-    return `
+  return `
         <div id="delete-item-modal" class="modal-overlay">
             <div class="modal-content max-w-md">
                 <h3 class="text-lg font-bold mb-4 text-red-600">Confirmar Eliminación</h3>
                 <p class="mb-4">¿Estás seguro de que quieres eliminar ${isRecipe ? 'la receta' : 'el ingrediente'} <strong>"${item?.name}"</strong>?</p>
 
-                ${isRecipe ? `
+                ${
+                  isRecipe
+                    ? `
                     <div class="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
                         <p class="text-sm text-blue-700">
                             Esta acción eliminará permanentemente la receta. Los ingredientes individuales no se verán afectados.
                         </p>
                     </div>
-                ` : `
-                    ${dependentRecipes.length > 0 ? `
+                `
+                    : `
+                    ${
+                      dependentRecipes.length > 0
+                        ? `
                         <div class="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
                             <h4 class="font-semibold text-red-800 mb-2">⚠️ No se puede eliminar este ingrediente</h4>
                             <p class="text-sm text-red-700 mb-2">Este ingrediente se usa en las siguientes recetas:</p>
                             <ul class="text-sm text-red-700 list-disc pl-5 mb-2">
-                                ${dependentRecipes.map(recipe => `<li><strong>${recipe}</strong></li>`).join('')}
+                                ${dependentRecipes.map((recipe) => `<li><strong>${recipe}</strong></li>`).join('')}
                             </ul>
                             <p class="text-sm text-red-600 font-medium">
                                 Para eliminar este ingrediente, primero debes quitarlo manualmente de cada receta donde se usa.
                             </p>
                         </div>
-                    ` : `
+                    `
+                        : `
                         <div class="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
                             <p class="text-sm text-green-700">✅ Este ingrediente no se usa en ninguna receta. Es seguro eliminarlo.</p>
                         </div>
-                    `}
-                `}
+                    `
+                    }
+                `
+                }
 
                 <div class="flex justify-end gap-2">
                     <button type="button" id="cancel-delete-item-btn" class="px-4 py-2 text-sm bg-gray-200 rounded-md hover:bg-gray-300">Cancelar</button>
-                    ${(isRecipe || dependentRecipes.length === 0) ? `
+                    ${
+                      isRecipe || dependentRecipes.length === 0
+                        ? `
                         <button type="button" id="confirm-delete-item-btn" class="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700">
                             Eliminar ${isRecipe ? 'Receta' : 'Ingrediente'}
                         </button>
-                    ` : `
+                    `
+                        : `
                         <button type="button" disabled class="px-4 py-2 text-sm bg-gray-400 text-gray-600 rounded-md cursor-not-allowed">
                             No se puede eliminar
                         </button>
-                    `}
+                    `
+                    }
                 </div>
             </div>
         </div>
@@ -1382,36 +1766,36 @@ function _renderDeleteItemModal() {
 
 // Main Render Function
 export function render() {
-    const appContainer = document.getElementById('app');
-    if (!appContainer) return;
+  const appContainer = document.getElementById('app');
+  if (!appContainer) return;
 
-    const state = getState();
-    const { ui } = state;
+  const state = getState();
+  const { ui } = state;
 
-    let currentViewHtml;
-    switch(ui.activeView) {
-        case 'library':
-            currentViewHtml = _renderItemLibrary();
-            break;
-        case 'recipes':
-            currentViewHtml = _renderRecipeLibrary();
-            break;
-        case 'recipeDetail':
-            currentViewHtml = _renderRecipeDetailView(ui.editingItemId);
-            break;
-        case 'itemDetail':
-            currentViewHtml = _renderItemDetailView(ui.editingItemId);
-            break;
-        case 'settings':
-            currentViewHtml = renderFunctions.renderSettingsView(state);
-            break;
-        case 'planner':
-        default:
-            currentViewHtml = _renderPlannerView();
-            break;
-    }
+  let currentViewHtml;
+  switch (ui.activeView) {
+    case 'library':
+      currentViewHtml = _renderItemLibrary();
+      break;
+    case 'recipes':
+      currentViewHtml = _renderRecipeLibrary();
+      break;
+    case 'recipeDetail':
+      currentViewHtml = _renderRecipeDetailView(ui.editingItemId);
+      break;
+    case 'itemDetail':
+      currentViewHtml = _renderItemDetailView(ui.editingItemId);
+      break;
+    case 'settings':
+      currentViewHtml = renderFunctions.renderSettingsView(state);
+      break;
+    case 'planner':
+    default:
+      currentViewHtml = _renderPlannerView();
+      break;
+  }
 
-    const newHtml = `
+  const newHtml = `
         <div class="mb-8">
             <div class="flex justify-between items-center border-b pb-4">
                 <h1 class="text-4xl font-bold text-gray-800">Atom-Canvas</h1>
@@ -1429,22 +1813,26 @@ export function render() {
         ${_renderDeleteItemModal()}
 
         <div id="toast-container" class="fixed bottom-4 right-4 space-y-2">
-            ${ui.notifications.map(n => `
+            ${ui.notifications
+              .map(
+                (n) => `
                 <div class="toast toast-${n.type}">
                     ${n.message}
                 </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
     `;
 
-    const tempContainer = document.createElement('div');
-    tempContainer.innerHTML = newHtml;
+  const tempContainer = document.createElement('div');
+  tempContainer.innerHTML = newHtml;
 
-    // Use Morphdom for efficient DOM updates
-    window.morphdom(appContainer, tempContainer, {
-        childrenOnly: true
-    });
+  // Use Morphdom for efficient DOM updates
+  window.morphdom(appContainer, tempContainer, {
+    childrenOnly: true,
+  });
 
-    // Re-attach event listeners after rendering
-    attachEventListeners(appContainer);
+  // Re-attach event listeners after rendering
+  attachEventListeners(appContainer);
 }

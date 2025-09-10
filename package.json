@@ -1,0 +1,34 @@
+{
+  "name": "1.0",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write .",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "npx eslint . --ext .js --config eslint.config.cjs --fix && npx prettier --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rubendelperro/PLANNER.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rubendelperro/PLANNER/issues"
+  },
+  "homepage": "https://github.com/rubendelperro/PLANNER#readme",
+  "devDependencies": {
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6",
+    "prettier": "^3.6.2"
+  },
+  "lint-staged": {
+    "*.js": "prettier --write"
+  }
+}

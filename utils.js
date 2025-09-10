@@ -1,146 +1,170 @@
 export const Logger = {
-    PREFIX: '[Atom-Canvas]',
-    log(message) { console.log(`${this.PREFIX} INFO:`, message); },
-    warn(message) { console.warn(`${this.PREFIX} WARN:`, message); },
-    error(message) { console.error(`${this.PREFIX} ERROR:`, message); }
+  PREFIX: '[Atom-Canvas]',
+  log(message) {
+    console.log(`${this.PREFIX} INFO:`, message);
+  },
+  warn(message) {
+    console.warn(`${this.PREFIX} WARN:`, message);
+  },
+  error(message) {
+    console.error(`${this.PREFIX} ERROR:`, message);
+  },
 };
 
 export const SLOTS = ['breakfast', 'lunch', 'dinner', 'snacks'];
-export const SLOT_NAMES = { breakfast: "Desayuno", lunch: "Comida", dinner: "Cena", snacks: "Snacks" };
+export const SLOT_NAMES = {
+  breakfast: 'Desayuno',
+  lunch: 'Comida',
+  dinner: 'Cena',
+  snacks: 'Snacks',
+};
 export const PRECISION_FACTOR = 1000;
 
 export function aggregateNutritionalVectors(vectors) {
-    const totals = {};
-    for (const vectorItem of vectors) {
-        if (!vectorItem || !vectorItem.nutrients) continue;
-        for (const nutrientId in vectorItem.nutrients) {
-            if (Object.prototype.hasOwnProperty.call(vectorItem.nutrients, nutrientId)) {
-                const value = vectorItem.nutrients[nutrientId];
-                const intValue = Math.round(value * PRECISION_FACTOR);
-                totals[nutrientId] = (totals[nutrientId] || 0) + intValue;
-            }
-        }
+  const totals = {};
+  for (const vectorItem of vectors) {
+    if (!vectorItem || !vectorItem.nutrients) continue;
+    for (const nutrientId in vectorItem.nutrients) {
+      if (
+        Object.prototype.hasOwnProperty.call(vectorItem.nutrients, nutrientId)
+      ) {
+        const value = vectorItem.nutrients[nutrientId];
+        const intValue = Math.round(value * PRECISION_FACTOR);
+        totals[nutrientId] = (totals[nutrientId] || 0) + intValue;
+      }
     }
-    return totals;
+  }
+  return totals;
 }
 
 export function getWeekDates(date = new Date()) {
-    const weekDates = [];
-    const today = new Date(date);
-    today.setHours(12, 0, 0, 0);
-    const dayOfWeek = today.getDay();
-    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-    const startOfWeek = new Date(today.setDate(diff));
+  const weekDates = [];
+  const today = new Date(date);
+  today.setHours(12, 0, 0, 0);
+  const dayOfWeek = today.getDay();
+  const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+  const startOfWeek = new Date(today.setDate(diff));
 
-    for (let i = 0; i < 7; i++) {
-        const dateInWeek = new Date(startOfWeek);
-        dateInWeek.setDate(dateInWeek.getDate() + i);
-        weekDates.push(dateInWeek);
-    }
-    return weekDates;
+  for (let i = 0; i < 7; i++) {
+    const dateInWeek = new Date(startOfWeek);
+    dateInWeek.setDate(dateInWeek.getDate() + i);
+    weekDates.push(dateInWeek);
+  }
+  return weekDates;
 }
 
 export function getMonthDates(date = new Date()) {
-    const monthDates = [];
-    const currentMonth = date.getMonth();
-    const currentYear = date.getFullYear();
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+  const monthDates = [];
+  const currentMonth = date.getMonth();
+  const currentYear = date.getFullYear();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
 
-    let currentDate = new Date(firstDayOfMonth);
-    currentDate.setHours(12, 0, 0, 0);
-    const dayOfWeek = currentDate.getDay();
-    const diff = currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-    currentDate.setDate(diff);
+  let currentDate = new Date(firstDayOfMonth);
+  currentDate.setHours(12, 0, 0, 0);
+  const dayOfWeek = currentDate.getDay();
+  const diff = currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+  currentDate.setDate(diff);
 
-    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-    const lastDayWeekDay = lastDayOfMonth.getDay();
-    const endDate = new Date(lastDayOfMonth);
-    endDate.setDate(lastDayOfMonth.getDate() + (7 - (lastDayWeekDay === 0 ? 7 : lastDayWeekDay)));
+  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+  const lastDayWeekDay = lastDayOfMonth.getDay();
+  const endDate = new Date(lastDayOfMonth);
+  endDate.setDate(
+    lastDayOfMonth.getDate() + (7 - (lastDayWeekDay === 0 ? 7 : lastDayWeekDay))
+  );
 
-    while (currentDate < endDate) {
-        const week = [];
-        for (let i = 0; i < 7; i++) {
-            week.push(new Date(currentDate));
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        monthDates.push(week);
+  while (currentDate < endDate) {
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+      week.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
     }
-    return monthDates;
+    monthDates.push(week);
+  }
+  return monthDates;
 }
 
 // Uses dependency injection (getNutritionalVectorForItemFn) to avoid circular dependency with selectors.js
-export function getNutrientVectorForPlannedItem(plannedItem, state, getNutritionalVectorForItemFn) {
-    const itemDetails = state.items.byId[plannedItem.id];
-    if (!itemDetails) return null;
-    const result = getNutritionalVectorForItemFn(itemDetails, plannedItem.grams, 'gramos');
-    return result;
+export function getNutrientVectorForPlannedItem(
+  plannedItem,
+  state,
+  getNutritionalVectorForItemFn
+) {
+  const itemDetails = state.items.byId[plannedItem.id];
+  if (!itemDetails) return null;
+  const result = getNutritionalVectorForItemFn(
+    itemDetails,
+    plannedItem.grams,
+    'gramos'
+  );
+  return result;
 }
 
 export function loadState() {
-    try {
-        const serializedState = localStorage.getItem('atomCanvasState_v20');
-        if (serializedState === null) {
-            const legacyState = localStorage.getItem('atomCanvasState');
-            return legacyState ? JSON.parse(legacyState) : undefined;
-        }
-        return JSON.parse(serializedState);
-    } catch (err) {
-        Logger.error('Failed to load state from localStorage', err);
-        return undefined;
+  try {
+    const serializedState = localStorage.getItem('atomCanvasState_v20');
+    if (serializedState === null) {
+      const legacyState = localStorage.getItem('atomCanvasState');
+      return legacyState ? JSON.parse(legacyState) : undefined;
     }
+    return JSON.parse(serializedState);
+  } catch (err) {
+    Logger.error('Failed to load state from localStorage', err);
+    return undefined;
+  }
 }
 
 export function saveState(state) {
-    try {
-        const serializedState = JSON.stringify(state);
-        localStorage.setItem('atomCanvasState_v20', serializedState);
-    } catch (err) {
-        Logger.error('Failed to save state to localStorage', err);
-    }
+  try {
+    const serializedState = JSON.stringify(state);
+    localStorage.setItem('atomCanvasState_v20', serializedState);
+  } catch (err) {
+    Logger.error('Failed to save state to localStorage', err);
+  }
 }
 
 export function debounce(func, delay = 300) {
-    let timeoutId;
-    const debounced = function(...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            func.apply(this, args);
-        }, delay);
-    };
-    debounced.cancel = () => {
-        clearTimeout(timeoutId);
-    };
-    return debounced;
+  let timeoutId;
+  const debounced = function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
+  debounced.cancel = () => {
+    clearTimeout(timeoutId);
+  };
+  return debounced;
 }
 
 // Helper para validar y normalizar el número de raciones
 export function validateServings(value) {
-    const servings = parseInt(value) || 1;
-    return Math.max(1, Math.min(20, servings)); // Clamp entre 1-20
+  const servings = parseInt(value) || 1;
+  return Math.max(1, Math.min(20, servings)); // Clamp entre 1-20
 }
 
 // Helper para crear/resetear el estado del editor de recetas
 export function createRecipeEditorState(recipe = null, isEditing = false) {
-    if (!isEditing || !recipe) {
-        return {
-            isEditing: false,
-            recipeId: null,
-            ingredients: [],
-            raciones: undefined
-        };
-    }
-
+  if (!isEditing || !recipe) {
     return {
-        isEditing: true,
-        recipeId: recipe.id,
-        ingredients: [...recipe.ingredients], // Copia profunda para edición temporal
-        raciones: recipe.raciones || 1 // Copiar raciones al estado temporal
+      isEditing: false,
+      recipeId: null,
+      ingredients: [],
+      raciones: undefined,
     };
+  }
+
+  return {
+    isEditing: true,
+    recipeId: recipe.id,
+    ingredients: [...recipe.ingredients], // Copia profunda para edición temporal
+    raciones: recipe.raciones || 1, // Copiar raciones al estado temporal
+  };
 }
 
 // Helper para obtener las raciones a mostrar (temporales durante edición o permanentes)
 export function getRacionesToShow(recipe, ui) {
-    const isEditing = ui.recipeEditor?.isEditing && ui.recipeEditor?.recipeId === recipe.id;
-    const raciones = isEditing ? ui.recipeEditor.raciones : recipe.raciones;
-    return raciones || 1; // Asegurar que siempre hay un valor válido
+  const isEditing =
+    ui.recipeEditor?.isEditing && ui.recipeEditor?.recipeId === recipe.id;
+  const raciones = isEditing ? ui.recipeEditor.raciones : recipe.raciones;
+  return raciones || 1; // Asegurar que siempre hay un valor válido
 }
