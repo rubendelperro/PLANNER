@@ -1,0 +1,990 @@
+import { debounce, Logger, validateServings, getMonthDates, getWeekDates } from './utils.js';
+import { findDependentRecipes } from './selectors.js';
+
+// Dependency Injection containers
+let dispatch = () => {};
+let getState = () => ({});
+
+let _debouncedProfileUpdate;
+let _debouncedRecipeUpdate;
+// Failsafe: listener global para navegación (se añade sólo una vez)
+let _navListenerAttached = false;
+
+export function initializeEvents(dispatchFn, getStateFn) {
+    dispatch = dispatchFn;
+    getState = getStateFn;
+
+    // Initialize debounced functions specific to event handling
+    _debouncedProfileUpdate = debounce(function (form) {
+        const state = getState();
+        const formData = new FormData(form);
+        const updatedData = { id: state.ui.activeProfileId };
+        for (let [key, value] of formData.entries()) {
+            updatedData[key] = isNaN(parseFloat(value)) || value === '' ? value : parseFloat(value);
+        }
+        dispatch({ type: 'UPDATE_PROFILE', payload: updatedData });
+    }, 500);
+
+    _debouncedRecipeUpdate = debounce(function (form) {
+        if (form && form.elements.recipeName) {
+            dispatch({ type: 'UPDATE_RECIPE_BUILDER_NAME', payload: form.elements.recipeName.value });
+        }
+    }, 500);
+}
+
+// Action Creators (Helper functions that create and dispatch actions)
+export const actions = {
+    requestDeletion(entityId, entityType) {
+        const state = getState();
+        let dependencies = [];
+        let dependencyMessage = '';
+        let deleteActionType = '';
+
+        // El Guardián opera aquí
+        switch (entityType) {
+            // (Cases 'ingrediente' and 'tag' removed as they are handled via DELETE_ITEM_MODAL now)
+
+            case 'nutriente_definicion':
+                const dependentIngredients = Object.values(state.items.byId)
+                    .filter(item => item.itemType === 'ingrediente' && item.nutrients && item.nutrients[entityId] !== undefined);
+                const dependentProfiles = Object.values(state.profiles.byId)
+                    .filter(profile => (profile.trackedNutrients && profile.trackedNutrients.includes(entityId)) || (profile.personalGoals && profile.personalGoals[entityId] !== undefined) );
+
+                if (dependentIngredients.length > 0 || dependentProfiles.length > 0) {
+                    dependencies = [...dependentIngredients, ...dependentProfiles];
+                    dependencyMessage = `Error: Nutriente en uso por ${dependentIngredients.length} ingrediente(s) y ${dependentProfiles.length} perfil(es).`;
+                }
+                deleteActionType = 'DELETE_ITEM';
+                break;
+
+            default:
+                dispatch({
+                    type: 'ADD_NOTIFICATION',
+                    payload: { message: `Error: Tipo de entidad desconocido o no manejado por requestDeletion '${entityType}'.`, type: 'error' }
+                });
+                return;
+        }
+
+        // Decisión final centralizada
+        if (dependencies.length > 0) {
+            dispatch({
+                type: 'ADD_NOTIFICATION',
+                payload: { message: dependencyMessage, type: 'error' }
+            });
+            const currentState = getState(); // Get state after dispatch
+            const notificationId = currentState.ui.notifications[currentState.ui.notifications.length - 1].id;
+            setTimeout(() => dispatch({ type: 'REMOVE_NOTIFICATION', payload: notificationId }), 3000);
+
+        } else {
+            // Solo si es seguro, se despacha la acción de borrado real
+            dispatch({ type: deleteActionType, payload: entityId });
+            dispatch({
+                type: 'ADD_NOTIFICATION',
+                payload: { message: 'Elemento eliminado con éxito.', type: 'success' }
+            });
+            const currentState = getState(); // Get state after dispatch
+            const notificationId = currentState.ui.notifications[currentState.ui.notifications.length - 1].id;
+            setTimeout(() => dispatch({ type: 'REMOVE_NOTIFICATION', payload: notificationId }), 3000);
+        }
+    },
+
+    createAndTrackNutrient(name, unit) {
+        const state = getState();
+        const id = `NUTRIENTE-${name.toUpperCase().replace(/\s/g, '_')}`;
+        if (state.items.byId[id]) {
+            Logger.warn(`Nutrient with id ${id} already exists.`);
+            return;
+        }
+
+        const newNutrient = {
+            id, name, unit,
+            type: 'nutriente',
+            itemType: 'definicion',
+            isCustom: true,
+        };
+
+        dispatch({
+            type: 'ADD_CUSTOM_NUTRIENT',
+            payload: newNutrient
+        });
+
+        const activeProfile = state.profiles.byId[state.ui.activeProfileId];
+        const trackedNutrients = [...(activeProfile.trackedNutrients || []), id];
+        dispatch({ type: 'UPDATE_PROFILE_TRACKED_NUTRIENTS', payload: { profileId: state.ui.activeProfileId, nutrients: trackedNutrients } });
+    },
+    createProfile() {
+        const newProfile = {
+            id: `PROF-${new Date().getTime()}`,
+            name: 'Nuevo Perfil',
+            personalGoals: {},
+            referenceSourceId: 'EFSA-2017',
+            trackedNutrients: ['calories', 'proteins', 'fats', 'carbs']
+        };
+        dispatch({ type: 'CREATE_PROFILE', payload: newProfile });
+    },
+
+    // Helpers for Recipe Editing
+    getIngredientFormElements() {
+        return {
+            ingredientSelect: document.getElementById('ingredient-select') ||
+                             document.getElementById('ingredient-selector-inline'),
+            gramsInput: document.getElementById('ingredient-grams') ||
+                       document.getElementById('ingredient-grams-inline')
+        };
+    },
+
+    validateIngredientInput(ingredientId, grams) {
+        const state = getState();
+        if (!ingredientId) {
+            return { isValid: false, error: 'Por favor selecciona un ingrediente' };
+        }
+
+        if (grams <= 0 || isNaN(grams)) {
+            return { isValid: false, error: 'Por favor ingresa una cantidad válida en gramos' };
+        }
+
+        if (!state.items.byId[ingredientId]) {
+            return { isValid: false, error: 'El ingrediente seleccionado no es válido' };
+        }
+
+        return { isValid: true, error: null };
+    },
+
+    addIngredientToRecipe() {
+        const { ingredientSelect, gramsInput } = this.getIngredientFormElements();
+
+        if (!ingredientSelect || !gramsInput) {
+            console.error('No se encontraron los elementos del selector de ingredientes');
+            return;
+        }
+
+        const selectedIngredientId = ingredientSelect.value;
+        const grams = parseFloat(gramsInput.value) || 0;
+
+        const validation = this.validateIngredientInput(selectedIngredientId, grams);
+        if (!validation.isValid) {
+            alert(validation.error);
+            return;
+        }
+
+        dispatch({
+            type: 'ADD_INGREDIENT_TO_EDITOR',
+            payload: {
+                ingredientId: selectedIngredientId,
+                grams: grams
+            }
+        });
+
+        this.clearAndFocusIngredientForm(ingredientSelect, gramsInput);
+        // Render is automatically called by dispatch
+    },
+
+    clearAndFocusIngredientForm(selectElement, inputElement) {
+        selectElement.value = '';
+        inputElement.value = '';
+        selectElement.focus();
+    }
+};
+
+// Main Event Listener Attachment
+export function attachEventListeners(container) {
+    if (!container) return;
+
+    // Failsafe: attach a single global nav listener to ensure buttons with data-view
+    // remain responsive even if re-rendering or delegate attachment had issues.
+    if (!_navListenerAttached) {
+        document.addEventListener('click', (event) => {
+            const navButton = event.target.closest && event.target.closest('button[data-view]');
+            if (navButton) {
+                // dispatch may be initialized later; if so, this will be a noop until ready
+                try {
+                    dispatch({ type: 'SET_ACTIVE_VIEW', payload: navButton.dataset.view });
+                } catch (e) {
+                    // swallow errors to avoid breaking UI
+                }
+            }
+        });
+        _navListenerAttached = true;
+    }
+
+    // Attach delegate listener only once
+    if (!container.dataset.mainDelegateAttached) {
+        container.addEventListener('click', (event) => {
+            const state = getState();
+
+            // Navigation
+            const navButton = event.target.closest('button[data-view]');
+            if (navButton) {
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: navButton.dataset.view });
+                return;
+            }
+
+            // Item Actions (Library View)
+            const viewItemButton = event.target.closest('[data-action="view-item"]');
+            if (viewItemButton) {
+                dispatch({ type: 'VIEW_ITEM_DETAIL', payload: { itemId: viewItemButton.dataset.itemId } });
+                return;
+            }
+
+            // Recipe Actions (Library View)
+            const viewRecipeButton = event.target.closest('[data-action="view-recipe"]');
+            if (viewRecipeButton) {
+                const recipeId = viewRecipeButton.dataset.recipeId;
+                dispatch({ type: 'VIEW_RECIPE_DETAIL', payload: { recipeId } });
+                return;
+            }
+
+            // Remove tag button (inside tag spans)
+            const removeTagBtn = event.target.closest('.remove-tag-btn');
+            if (removeTagBtn) {
+                event.stopPropagation();
+                const tag = removeTagBtn.dataset.tag;
+                const tagSpan = removeTagBtn.closest('span[data-tag]');
+                if (tagSpan) tagSpan.remove();
+                // No immediate dispatch: the save flow collects current spans and updates tags when the form is saved.
+                return;
+            }
+
+            // --- Recipe Detail View Handlers ---
+
+            // Toggle Nutrients View (DOM manipulation only, no state change)
+            const per100gBtn = event.target.closest('#per-100g-btn');
+            const perServingBtn = event.target.closest('#per-serving-btn');
+
+            if (per100gBtn || perServingBtn) {
+                const per100gButton = container.querySelector('#per-100g-btn');
+                const perServingButton = container.querySelector('#per-serving-btn');
+                const nutrientValues = container.querySelectorAll('.nutrient-value');
+
+                if (per100gBtn) {
+                    // Activar vista por 100g
+                    per100gButton.className = 'flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow';
+                    perServingButton.className = 'flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900';
+
+                    nutrientValues.forEach(valueElement => {
+                        const per100gValue = valueElement.dataset.per100g;
+                        const unit = valueElement.dataset.unit;
+                        const target = valueElement.dataset.target;
+                        const percentage = valueElement.dataset.percentage100g;
+                        const status = valueElement.dataset.status100g;
+                        const targetDisplay = target ? ` / ${parseFloat(target).toFixed(0)}${unit}` : '';
+
+                        valueElement.textContent = `${per100gValue}${unit}${targetDisplay}`;
+
+                        const progressBar = valueElement.closest('.space-y-2').querySelector('.progress-bar-inner');
+                        if (progressBar && target) {
+                            const statusColors = { success: 'bg-green-500', warning: 'bg-yellow-500', danger: 'bg-red-500', info: 'bg-blue-500' };
+                            progressBar.className = `progress-bar-inner h-full ${statusColors[status]} transition-all duration-300`;
+                            progressBar.style.width = `${percentage}%`;
+                        }
+                    });
+                } else if (perServingBtn) {
+                    // Activar vista por ración
+                    perServingButton.className = 'flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow';
+                    per100gButton.className = 'flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900';
+
+                    nutrientValues.forEach(valueElement => {
+                        const perServingValue = valueElement.dataset.perserving;
+                        const unit = valueElement.dataset.unit;
+                        const target = valueElement.dataset.target;
+                        const percentage = valueElement.dataset.percentageperserving;
+                        const status = valueElement.dataset.statusperserving;
+                        const targetDisplay = target ? ` / ${parseFloat(target).toFixed(0)}${unit}` : '';
+
+                        valueElement.textContent = `${perServingValue}${unit}${targetDisplay}`;
+
+                        const progressBar = valueElement.closest('.space-y-2').querySelector('.progress-bar-inner');
+                        if (progressBar && target) {
+                            const statusColors = { success: 'bg-green-500', warning: 'bg-yellow-500', danger: 'bg-red-500', info: 'bg-blue-500' };
+                            progressBar.className = `progress-bar-inner h-full ${statusColors[status]} transition-all duration-300`;
+                            progressBar.style.width = `${percentage}%`;
+                        }
+                    });
+                }
+                return;
+            }
+
+            const backToRecipesBtn = event.target.closest('#back-to-recipes-btn');
+            if (backToRecipesBtn) {
+                if (state.ui.recipeEditor?.isEditing) {
+                    dispatch({ type: 'SAVE_RECIPE_EDITS' });
+                }
+                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'recipes' });
+                return;
+            }
+
+            const editRecipeBtn = event.target.closest('#edit-recipe-btn');
+            if (editRecipeBtn) {
+                const recipeId = state.ui.editingItemId;
+                if (state.ui.recipeEditor?.isEditing) {
+                    dispatch({ type: 'CANCEL_RECIPE_EDITING' });
+                } else {
+                    dispatch({ type: 'START_RECIPE_EDITING', payload: { recipeId } });
+                }
+                return;
+            }
+
+            const deleteCurrentRecipeBtn = event.target.closest('#delete-current-recipe-btn');
+            if (deleteCurrentRecipeBtn) {
+                event.stopPropagation();
+                const recipeId = deleteCurrentRecipeBtn.dataset.recipeId;
+                dispatch({
+                    type: 'OPEN_DELETE_ITEM_MODAL',
+                    payload: { itemId: recipeId, dependentRecipes: [] }
+                });
+                return;
+            }
+
+            // ============ ITEM DETAIL HANDLERS ============
+
+            const backToLibraryBtn = event.target.closest('#back-to-library-btn');
+            if (backToLibraryBtn) {
+                const isEditing = state.ui.itemEditor?.isEditing;
+                if (isEditing) {
+                    // Guardar cambios (submit form logic moved here from submit handler)
+                    const form = document.getElementById('item-detail-form');
+                    if (form) {
+                        const formData = new FormData(form);
+                        const itemId = form.dataset.itemId;
+
+                        const updates = {
+                            name: formData.get('name'),
+                            logistics: {
+                                // Stock inputs were removed from the UI; keep stock unchanged by default.
+                                price: {
+                                    value: parseFloat(formData.get('priceValue')) || 0,
+                                    unit: 'euros'
+                                },
+                                preferredStoreIds: Array.from(formData.getAll('preferredStoreIds')),
+                                // Campos para cálculos económicos (no afectan al motor de nutrientes)
+                                packageGrams: (formData.get('packageGrams') !== null && formData.get('packageGrams') !== '') ? parseInt(formData.get('packageGrams'), 10) : undefined,
+                                unitsPerPackage: (formData.get('unitsPerPackage') !== null && formData.get('unitsPerPackage') !== '') ? parseInt(formData.get('unitsPerPackage'), 10) : undefined
+                            },
+                            categoryIds: Array.from(formData.getAll('categoryIds')),
+                            nutrients: {}
+                        };
+
+                        // Handle tags (which are not standard form elements)
+                        const tagContainer = document.getElementById('item-tags-container');
+                        // Leer solo spans que contienen data-tag para evitar duplicados y capturar correctamente el valor
+                        const currentTags = tagContainer ? Array.from(tagContainer.querySelectorAll('span[data-tag]')).map(span => span.dataset.tag) : [];
+                        const newTagInput = form.elements.newTag;
+                        const newTag = newTagInput ? newTagInput.value.trim() : '';
+                        if (newTag && !currentTags.includes(newTag)) {
+                            currentTags.push(newTag);
+                        }
+                        updates.tags = currentTags;
+
+
+                        // Obtener valores nutricionales si es un ingrediente
+                        for (const [key, value] of formData.entries()) {
+                            if (key.startsWith('nutrient_')) {
+                                const nutrientId = key.replace('nutrient_', '');
+                                updates.nutrients[nutrientId] = parseFloat(value) || 0;
+                            }
+                        }
+
+                        // Dispatch update, then ensure we exit edit mode and open the item's detail in view mode
+                        dispatch({ type: 'UPDATE_ITEM_DETAIL', payload: { itemId, updates } });
+                        // Clear editing state if present
+                        dispatch({ type: 'CANCEL_EDITING_ITEM' });
+                        // Show the saved item in view mode
+                        dispatch({ type: 'VIEW_ITEM_DETAIL', payload: { itemId } });
+                    }
+                } else {
+                    dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'library' });
+                }
+                return;
+            }
+
+            const editItemBtn = event.target.closest('#edit-item-btn');
+            if (editItemBtn) {
+                const itemId = state.ui.editingItemId;
+                if (state.ui.itemEditor?.isEditing) {
+                    dispatch({ type: 'CANCEL_EDITING_ITEM' });
+                } else {
+                    dispatch({ type: 'START_EDITING_ITEM', payload: { itemId } });
+                }
+                return;
+            }
+
+            const deleteCurrentItemBtn = event.target.closest('#delete-current-item-btn');
+            if (deleteCurrentItemBtn) {
+                event.stopPropagation();
+                const itemId = deleteCurrentItemBtn.dataset.itemId;
+
+                // Use imported selector
+                const dependentRecipes = findDependentRecipes(itemId);
+
+                dispatch({
+                    type: 'OPEN_DELETE_ITEM_MODAL',
+                    payload: { itemId, dependentRecipes }
+                });
+                return;
+            }
+
+            // ============ RECIPE EDITING HANDLERS ============
+
+            // Eliminar ingrediente específico durante edición
+            const removeIngredientBtn = event.target.closest('.remove-ingredient-btn');
+            if (removeIngredientBtn) {
+                const index = parseInt(removeIngredientBtn.dataset.index);
+                dispatch({ type: 'REMOVE_INGREDIENT_FROM_EDITOR', payload: { index } });
+                return;
+            }
+
+             // Add ingredient button (Recipe Detail View)
+             const addIngredientBtn = event.target.closest('#add-ingredient-btn');
+             if (addIngredientBtn) {
+                 actions.addIngredientToRecipe();
+                 return;
+             }
+
+            // ============ MODAL HANDLERS ============
+
+            if (event.target.id === 'cancel-delete-item-btn' || event.target.closest('#cancel-delete-item-btn')) {
+                event.stopPropagation();
+                dispatch({ type: 'CLOSE_DELETE_ITEM_MODAL' });
+                return;
+            }
+
+            if (event.target.id === 'confirm-delete-item-btn') {
+                event.stopPropagation();
+                const itemId = state.ui.deleteItemModal.itemId;
+                const item = state.items.byId[itemId];
+
+                if (item) {
+                    switch(item.itemType) {
+                        case 'receta':
+                            dispatch({ type: 'DELETE_ITEM', payload: itemId });
+                            dispatch({ type: 'CANCEL_EDITING_ITEM' });
+                            // Navigate back if still viewing the deleted recipe
+                            if (state.ui.activeView === 'recipeDetail' && state.ui.editingItemId === itemId) {
+                                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'recipes' });
+                            }
+                            break;
+                        case 'ingrediente':
+                            dispatch({ type: 'DELETE_INGREDIENT', payload: itemId });
+                            // Navigate back if still viewing the deleted item
+                            if (state.ui.activeView === 'itemDetail' && state.ui.editingItemId === itemId) {
+                                dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'library' });
+                            }
+                            break;
+                        case 'definicion':
+                            dispatch({ type: 'DELETE_ITEM', payload: itemId });
+                            break;
+                        default:
+                            dispatch({ type: 'DELETE_ITEM', payload: itemId });
+                            break;
+                    }
+                }
+                dispatch({ type: 'CLOSE_DELETE_ITEM_MODAL' });
+                return;
+            }
+
+            // Cerrar modal al hacer clic en el overlay
+            if (event.target.id === 'delete-item-modal' && !event.target.closest('.modal-content')) {
+                dispatch({ type: 'CLOSE_DELETE_ITEM_MODAL' });
+                return;
+            }
+
+
+            // ============ PLANNER VIEW HANDLERS ============
+
+            const plannerButton = event.target.closest('button[data-date]:not([data-delete-planned-meal])');
+            if (plannerButton && !event.target.closest('[data-delete-planned-meal]')) {
+                const newDate = plannerButton.dataset.date;
+                dispatch({ type: 'SET_ACTIVE_DAY', payload: newDate });
+                return;
+            }
+
+            const addIngredientToRecipeBtn = event.target.closest('#add-ingredient-to-recipe-btn');
+            if (addIngredientToRecipeBtn) {
+                // Recipe Builder (Planner View)
+                const form = addIngredientToRecipeBtn.closest('form');
+                const ingredientId = form.elements.ingredientSelect.value;
+                const grams = parseFloat(form.elements.grams.value);
+                if (ingredientId && state.items.byId[ingredientId] && grams > 0) {
+                    dispatch({ type: 'ADD_INGREDIENT_TO_BUILDER', payload: { ingredientId, grams } });
+                }
+                return;
+            }
+
+            // Profile Management
+            const confirmProfileButton = event.target.closest('#confirm-profile-change');
+            if (confirmProfileButton) {
+                _debouncedProfileUpdate.cancel();
+                const selector = container.querySelector('#profile-selector');
+                dispatch({ type: 'SET_ACTIVE_PROFILE', payload: selector.value });
+                return;
+            }
+
+            const newProfileBtn = event.target.closest('#new-profile-btn');
+            if (newProfileBtn) {
+                _debouncedProfileUpdate.cancel();
+                actions.createProfile();
+                return;
+            }
+
+            const deleteProfileBtn = event.target.closest('#delete-profile-btn');
+            if (deleteProfileBtn) {
+                _debouncedProfileUpdate.cancel();
+                dispatch({ type: 'DELETE_PROFILE', payload: state.ui.activeProfileId });
+                return;
+            }
+
+            // Nutrient Manager
+            const deleteNutrientBtn = event.target.closest('[data-delete-nutrient-id]');
+            if (deleteNutrientBtn) {
+                const nutrientId = deleteNutrientBtn.dataset.deleteNutrientId;
+                actions.requestDeletion(nutrientId, 'nutriente_definicion');
+                return;
+            }
+
+            // Store/Category Management
+            const deleteStoreBtn = event.target.closest('[data-delete-store-id]');
+            if (deleteStoreBtn) {
+                const storeId = deleteStoreBtn.dataset.deleteStoreId;
+                dispatch({ type: 'DELETE_STORE', payload: storeId });
+                return;
+            }
+
+            const deleteCategoryBtn = event.target.closest('[data-delete-category-id]');
+            if (deleteCategoryBtn) {
+                const categoryId = deleteCategoryBtn.dataset.deleteCategoryId;
+                dispatch({ type: 'DELETE_CATEGORY', payload: categoryId });
+                return;
+            }
+
+            const deletePlannedMealBtn = event.target.closest('[data-delete-planned-meal]');
+            if (deletePlannedMealBtn) {
+                event.stopPropagation(); // Prevent accordion from closing
+                const date = deletePlannedMealBtn.dataset.date;
+                const slot = deletePlannedMealBtn.dataset.slot;
+                const itemIndex = parseInt(deletePlannedMealBtn.dataset.itemIndex);
+                dispatch({ type: 'REMOVE_PLANNED_MEAL', payload: { date, slot, itemIndex } });
+                return;
+            }
+
+            // Target Panel Editing
+            const targetElement = event.target.closest('[data-nutrient-id]');
+            if (targetElement && container.querySelector('#targets-panel')?.contains(targetElement) && !targetElement.querySelector('input')) {
+                const valueDisplay = targetElement.querySelector('[data-value-display]');
+                if (!valueDisplay) return;
+
+                if (state.profiles.byId[state.ui.activeProfileId]?.isDefault) {
+                    return;
+                }
+
+                const nutrientId = targetElement.dataset.nutrientId;
+
+                // Extract value from data attribute (set during render)
+                const displayValue = valueDisplay.getAttribute('data-value-display');
+                const currentValue = parseFloat(displayValue) || '';
+
+
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = 0;
+                input.value = currentValue ? parseFloat(currentValue).toFixed(0) : '';
+                input.className = 'font-bold text-lg text-blue-600 bg-gray-100 border border-blue-300 rounded-md text-right w-24';
+
+                const persistChange = () => {
+                        const valueStr = input.value;
+                        const newValue = valueStr === '' ? null : parseFloat(valueStr);
+                        if (newValue === null || !isNaN(newValue)) {
+                            dispatch({ type: 'SET_PERSONAL_GOAL', payload: { profileId: state.ui.activeProfileId, nutrientId, value: newValue }});
+                        } else {
+                            dispatch({ type: 'NO_OP' });
+                        }
+                };
+
+                input.addEventListener('blur', persistChange);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') input.blur();
+                    if (e.key === 'Escape') dispatch({ type: 'NO_OP' });
+                });
+
+                valueDisplay.replaceWith(input);
+                input.focus();
+                input.select();
+                return;
+            }
+
+            // Nexus Calendar Interactions
+            const nexusCell = event.target.closest('.nexus-cell');
+            if (nexusCell) {
+                const selectionId = nexusCell.dataset.selectionId;
+                const selectionType = nexusCell.dataset.selectionType;
+                if (selectionType) {
+                    let datesContext;
+                    if (state.ui.nexusView === 'month') {
+                        datesContext = getMonthDates(new Date(state.ui.activePlannerDay || new Date())).flat();
+                    } else {
+                        datesContext = getWeekDates(new Date(state.ui.activePlannerDay || new Date()));
+                    }
+                    dispatch({ type: 'COMPLEX_TOGGLE', payload: { type: selectionType, value: selectionId, context: { dates: datesContext } } });
+                }
+                return;
+            }
+
+            if (event.target.closest('#prev-week-btn') || event.target.closest('#prev-month-btn')) {
+                const type = state.ui.nexusView === 'week' ? 'CHANGE_WEEK' : 'CHANGE_MONTH';
+                dispatch({ type: type, payload: { direction: 'prev' } });
+                return;
+            }
+            if (event.target.closest('#next-week-btn') || event.target.closest('#next-month-btn')) {
+                const type = state.ui.nexusView === 'week' ? 'CHANGE_WEEK' : 'CHANGE_MONTH';
+                dispatch({ type: type, payload: { direction: 'next' } });
+                return;
+            }
+            if (event.target.closest('#view-week-btn')) {
+                dispatch({ type: 'SET_NEXUS_VIEW', payload: 'week' });
+                return;
+            }
+            if (event.target.closest('#view-month-btn')) {
+                dispatch({ type: 'SET_NEXUS_VIEW', payload: 'month' });
+                return;
+            }
+            if (event.target.closest('#go-to-today-btn')) {
+                dispatch({ type: 'GO_TO_TODAY' });
+                return;
+            }
+            if (event.target.closest('#clear-selection-btn')) {
+                dispatch({ type: 'CLEAR_SELECTION' });
+                return;
+            }
+        });
+
+        // --- Input/Change/Submit Listeners ---
+
+        container.addEventListener('input', (event) => {
+            const state = getState();
+            // Handler para cambios en cantidad de ingredientes durante edición
+            if (event.target.classList.contains('ingredient-grams-input') && state.ui.recipeEditor.isEditing) {
+                const index = parseInt(event.target.dataset.index);
+                const grams = parseFloat(event.target.value) || 0;
+                dispatch({ type: 'UPDATE_INGREDIENT_IN_EDITOR', payload: { index, grams } });
+                return;
+            }
+
+            // Profile Form (Debounced)
+            if (event.target.closest('#profile-form')) {
+                _debouncedProfileUpdate(event.target.closest('#profile-form'));
+            }
+
+            // Recipe Builder Form (Debounced)
+            const recipeForm = event.target.closest('#recipe-form');
+            if(recipeForm && event.target.name === 'recipeName') {
+                _debouncedRecipeUpdate(recipeForm);
+            }
+
+            // Recipe Servings Input
+            if (event.target.id === 'recipe-servings-input' && !event.target.readOnly) {
+                const validServings = validateServings(event.target.value);
+                const recipeId = event.target.dataset.recipeId;
+                const currentServings = state.ui.recipeEditor?.raciones;
+
+                // Auto-corrección
+                if (parseInt(event.target.value) !== validServings) {
+                    event.target.value = validServings;
+                }
+
+                // Optimización: solo despachar si hay cambios reales
+                if (recipeId && currentServings !== validServings) {
+                    dispatch({
+                        type: 'UPDATE_RECIPE_SERVINGS',
+                        payload: { recipeId, servings: validServings }
+                    });
+                    // Dispatch triggers re-render automatically.
+                }
+            }
+        });
+
+        container.addEventListener('keydown', (event) => {
+            // Tag input handling (Item Detail View)
+            if (event.target.name === 'newTag' && event.key === 'Enter') {
+                event.preventDefault(); // CRÍTICO: Prevenir el envío del formulario
+                const newTagInput = event.target;
+                const tagContainer = newTagInput.closest('#item-tags-container');
+                const newTagValue = newTagInput.value.trim();
+
+                if (newTagValue) {
+                    // Crear span con botón de borrado para la nueva etiqueta
+                    const newTagElement = document.createElement('span');
+                    newTagElement.setAttribute('data-tag', newTagValue);
+                    newTagElement.className = 'bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm flex items-center gap-2';
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'tag-text';
+                    textSpan.textContent = newTagValue;
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'remove-tag-btn text-red-600 hover:text-red-800 ml-2 text-sm';
+                    removeBtn.setAttribute('data-tag', newTagValue);
+                    removeBtn.setAttribute('aria-label', 'Eliminar tag');
+                    removeBtn.textContent = '✕';
+
+                    newTagElement.appendChild(textSpan);
+                    newTagElement.appendChild(removeBtn);
+
+                    const existingTags = Array.from(tagContainer.querySelectorAll('span[data-tag]')).map(span => span.dataset.tag);
+                    if (!existingTags.includes(newTagValue)) {
+                        tagContainer.insertBefore(newTagElement, newTagInput);
+                    }
+
+                    newTagInput.value = ''; // Limpiar para el siguiente tag
+                }
+            }
+        });
+
+        container.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const formId = event.target.id;
+            const state = getState();
+
+            if(formId === 'planner-assignment-form') {
+                const formElements = event.target.elements;
+                const id = formElements.consumableId.value;
+                const payload = { id, date: formElements.date.value, slot: formElements.slot.value, grams: parseFloat(formElements.grams.value) || 0 };
+                if (payload.id && payload.date && payload.slot && payload.grams > 0) {
+                    dispatch({ type: 'ASSIGN_ITEM_TO_SLOT', payload });
+                }
+            } else if (formId === 'recipe-form') {
+                const { name, ingredients } = state.ui.recipeBuilder;
+                if (name && ingredients.length > 0) {
+                    const newRecipe = {
+                        id: `REC-${new Date().getTime()}`,
+                        name: name,
+                        ingredients: ingredients
+                    };
+                    dispatch({ type: 'ADD_RECIPE', payload: newRecipe });
+                    dispatch({ type: 'CLEAR_RECIPE_BUILDER' });
+
+                    const notificationAction = { type: 'ADD_NOTIFICATION', payload: { message: 'Receta guardada con éxito', type: 'success' } };
+                    dispatch(notificationAction);
+                    const newState = getState(); // Get updated state
+                    const newNotifications = newState.ui.notifications;
+                    if (newNotifications.length > 0) {
+                        const newNotificationId = newNotifications[newNotifications.length - 1].id;
+                        setTimeout(() => {
+                            dispatch({ type: 'REMOVE_NOTIFICATION', payload: newNotificationId });
+                        }, 3000);
+                    }
+                }
+            } else if (formId === 'add-nutrient-form') {
+                const form = event.target;
+                const name = form.elements.name.value;
+                const unit = form.elements.unit.value;
+                if (name && unit) {
+                    actions.createAndTrackNutrient(name, unit);
+                    form.reset();
+                }
+            } else if (formId === 'add-store-form') {
+                const form = event.target;
+                const storeName = form.elements.storeName.value.trim();
+                if (storeName) {
+                    const newStore = {
+                        id: `STORE-${storeName.toUpperCase().replace(/\s/g, '_')}-${Date.now()}`,
+                        name: storeName
+                    };
+                    dispatch({ type: 'ADD_STORE', payload: newStore });
+                    form.reset();
+                }
+            } else if (formId === 'add-category-form') {
+                const form = event.target;
+                const categoryName = form.elements.categoryName.value.trim();
+                if (categoryName) {
+                    const newCategory = {
+                        id: `CAT-${categoryName.toUpperCase().replace(/\s/g, '_')}-${Date.now()}`,
+                        name: categoryName
+                    };
+                    dispatch({ type: 'ADD_CATEGORY', payload: newCategory });
+                    form.reset();
+                }
+            }
+            // Note: 'item-detail-form' submission is handled by the 'back-to-library-btn' click handler when editing.
+        });
+
+        container.addEventListener('change', (event) => {
+            const state = getState();
+            if (event.target.id === 'profile-selector') {
+                _debouncedProfileUpdate.cancel();
+                const confirmBtn = container.querySelector('#confirm-profile-change');
+                if (event.target.value !== state.ui.activeProfileId) {
+                    confirmBtn.classList.remove('hidden');
+                } else {
+                    confirmBtn.classList.add('hidden');
+                }
+            }
+            if (event.target.matches('.nutrient-toggle')) {
+                const activeProfile = state.profiles.byId[state.ui.activeProfileId];
+                let trackedNutrients = [...(activeProfile.trackedNutrients || [])];
+                const nutrientId = event.target.value;
+                if (event.target.checked) {
+                    if (!trackedNutrients.includes(nutrientId)) {
+                        trackedNutrients.push(nutrientId);
+                    }
+                } else {
+                    trackedNutrients = trackedNutrients.filter(id => id !== nutrientId);
+                }
+                // ORDENAR PARA MANTENER LA CONSISTENCIA
+                const nutrientDefinitions = state.items.byId;
+                trackedNutrients.sort((a, b) => nutrientDefinitions[a].name.localeCompare(nutrientDefinitions[b].name));
+                dispatch({ type: 'UPDATE_PROFILE_TRACKED_NUTRIENTS', payload: { profileId: state.ui.activeProfileId, nutrients: trackedNutrients } });
+            }
+        });
+
+        // --- Drag and Drop Handlers (Nutrient Manager) ---
+        const nutrientManager = container.querySelector('#nutrient-manager-list');
+        if (nutrientManager) {
+            let draggedElementId = null;
+            let currentDragOverElement = null;
+
+            nutrientManager.addEventListener('dragstart', (event) => {
+                const target = event.target.closest('[data-nutrient-id][draggable="true"]');
+                if (target) {
+                    draggedElementId = target.dataset.nutrientId;
+                    event.dataTransfer.setData('text/plain', draggedElementId);
+                    setTimeout(() => target.classList.add('dragging'), 0);
+                }
+            });
+
+            nutrientManager.addEventListener('dragend', (event) => {
+                if (currentDragOverElement) {
+                    currentDragOverElement.classList.remove('drag-over-top', 'drag-over-bottom');
+                }
+                const target = event.target.closest('[data-nutrient-id]');
+                if (target) {
+                    target.classList.remove('dragging');
+                }
+                draggedElementId = null;
+                currentDragOverElement = null;
+            });
+
+            nutrientManager.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                const target = event.target.closest('[data-nutrient-id][draggable="true"]');
+
+                if (target && target.dataset.nutrientId !== draggedElementId) {
+                    if (currentDragOverElement && currentDragOverElement !== target) {
+                        currentDragOverElement.classList.remove('drag-over-top', 'drag-over-bottom');
+                    }
+                    currentDragOverElement = target;
+
+                    const rect = target.getBoundingClientRect();
+                    const midpoint = rect.top + (rect.height / 2);
+                    if (event.clientY < midpoint) {
+                        target.classList.add('drag-over-top');
+                        target.classList.remove('drag-over-bottom');
+                    } else {
+                        target.classList.add('drag-over-bottom');
+                        target.classList.remove('drag-over-top');
+                    }
+                } else if (!target) {
+                    const lastElement = nutrientManager.querySelector('[data-nutrient-id][draggable="true"]:last-child');
+                    if (lastElement) {
+                        if (currentDragOverElement && currentDragOverElement !== lastElement) {
+                            currentDragOverElement.classList.remove('drag-over-top', 'drag-over-bottom');
+                        }
+                        lastElement.classList.add('drag-over-bottom');
+                        lastElement.classList.remove('drag-over-top');
+                        currentDragOverElement = lastElement;
+                    }
+                }
+            });
+
+            nutrientManager.addEventListener('dragleave', (event) => {
+                if (event.relatedTarget === null || !nutrientManager.contains(event.relatedTarget)) {
+                    if (currentDragOverElement) {
+                        currentDragOverElement.classList.remove('drag-over-top', 'drag-over-bottom');
+                        currentDragOverElement = null;
+                    }
+                }
+            });
+
+            nutrientManager.addEventListener('drop', (event) => {
+                event.preventDefault();
+                const state = getState();
+                const droppedOnElement = event.target.closest('[data-nutrient-id][draggable="true"]');
+
+                if (currentDragOverElement) {
+                    currentDragOverElement.classList.remove('drag-over-top', 'drag-over-bottom');
+                }
+
+                if (!droppedOnElement && draggedElementId) {
+                    const activeProfile = state.profiles.byId[state.ui.activeProfileId];
+                    if (!activeProfile) return;
+
+                    const originalTracked = [...activeProfile.trackedNutrients];
+                    const itemToMove = originalTracked.find(id => id === draggedElementId);
+                    if (!itemToMove) return;
+
+                    const temporaryTracked = originalTracked.filter(id => id !== draggedElementId);
+                    temporaryTracked.push(itemToMove);
+
+                    dispatch({ type: 'UPDATE_PROFILE_TRACKED_NUTRIENTS', payload: { profileId: state.ui.activeProfileId, nutrients: temporaryTracked } });
+                    draggedElementId = null;
+                    return;
+                }
+
+                if (!droppedOnElement || !draggedElementId || draggedElementId === droppedOnElement.dataset.nutrientId) {
+                    return;
+                }
+
+                const activeProfile = state.profiles.byId[state.ui.activeProfileId];
+                if (!activeProfile) return;
+
+                const isDroppingOnBottomHalf = droppedOnElement.classList.contains('drag-over-bottom');
+
+                const originalTracked = [...activeProfile.trackedNutrients];
+                const itemToMove = originalTracked.find(id => id === draggedElementId);
+                if (!itemToMove) return;
+
+                const temporaryTracked = originalTracked.filter(id => id !== draggedElementId);
+                const dropTargetId = droppedOnElement.dataset.nutrientId;
+                let newDropIndex = temporaryTracked.indexOf(dropTargetId);
+
+                if (isDroppingOnBottomHalf) {
+                    temporaryTracked.splice(newDropIndex + 1, 0, itemToMove);
+                } else {
+                    temporaryTracked.splice(newDropIndex, 0, itemToMove);
+                }
+
+                dispatch({
+                    type: 'UPDATE_PROFILE_TRACKED_NUTRIENTS',
+                    payload: {
+                        profileId: state.ui.activeProfileId,
+                        nutrients: temporaryTracked
+                    }
+                });
+
+                draggedElementId = null;
+            });
+        }
+
+        container.dataset.mainDelegateAttached = 'true';
+    }
+
+    // Post-render updates (ensure draggable status is correct)
+    const state = getState();
+    const nutrientManagerList = container.querySelector('#nutrient-manager-list');
+    if (nutrientManagerList) {
+        const activeProfile = state.profiles.byId[state.ui.activeProfileId];
+        const trackedNutrients = activeProfile?.trackedNutrients || [];
+
+        const allNutrientDivs = nutrientManagerList.querySelectorAll('[data-nutrient-id]');
+        allNutrientDivs.forEach(div => {
+            const nutrientId = div.dataset.nutrientId;
+            const shouldBeDraggable = trackedNutrients.includes(nutrientId);
+            const isCurrentlyDraggable = div.getAttribute('draggable') === 'true';
+
+            if (shouldBeDraggable && !isCurrentlyDraggable) {
+                div.setAttribute('draggable', 'true');
+            } else if (!shouldBeDraggable && isCurrentlyDraggable) {
+                div.setAttribute('draggable', 'false');
+            }
+        });
+    }
+}
