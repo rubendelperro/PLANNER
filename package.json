@@ -10,7 +10,9 @@
     "lint:fix": "npx eslint . --ext .js --config eslint.config.cjs --fix && npx prettier --write .",
     "precommit": "lint-staged",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "test:e2e:headed:edge": "cypress open --e2e --browser edge",
+    "test:e2e:run:global": "cypress run --spec cypress/e2e/global_propagation.cy.js --browser electron --headless"
   },
   "repository": {
     "type": "git",

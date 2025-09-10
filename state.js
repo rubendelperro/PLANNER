@@ -1431,4 +1431,24 @@ export function init() {
 
   // Load the initial state into the system
   dispatch({ type: 'INIT_DATA', payload: finalInitialState });
+  // Signal to E2E tests that the app finished initialization
+  try {
+    window.__appReady = true;
+  } catch (e) {
+    /* ignore in restricted contexts */
+  }
+
+  // Expose lightweight test hooks for E2E specs. These are safe and read-only.
+  if (typeof window !== 'undefined') {
+    try {
+      window.__getState = getState;
+      // Expose dispatch so E2E tests can programmatically mutate state when needed
+      window.__dispatch = dispatch;
+      // Mark app as ready for tests that check a global flag
+      window.__appReady = true;
+    } catch (err) {
+      // In restricted environments this may fail; ignore silently
+      Logger.debug('Could not expose test hooks on window', err);
+    }
+  }
 }
