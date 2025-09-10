@@ -3,6 +3,7 @@
 Resumen corto: este repositorio usa Prettier para formateo, ESLint para linting, Husky + lint-staged para hooks locales (Prettier en pre-commit) y Cypress para E2E. Hay un workflow de CI que ejecuta ESLint en PRs.
 
 ## Requisitos
+
 - Node.js (v16+ recomendable, se probó con v22)
 - npm
 
@@ -69,11 +70,13 @@ Si quieres habilitar ESLint en pre-commit (opción más estricta), una forma rob
 Hay un workflow `.github/workflows/lint.yml` que ejecuta `npm run lint` en pushes y PRs contra `main`.
 
 ## Recomendaciones antes de codificar
-- Activa `Format on Save` en tu editor (VSCode) para aplicar Prettier al guardar.  
-- Ejecuta `npm run lint:fix` y revisa los cambios antes del primer commit de una nueva funcionalidad.  
+
+- Activa `Format on Save` en tu editor (VSCode) para aplicar Prettier al guardar.
+- Ejecuta `npm run lint:fix` y revisa los cambios antes del primer commit de una nueva funcionalidad.
 - Añade tests Cypress adicionales para las rutas y comportamientos importantes.
 
 ## ¿Problemas con PowerShell y npm?
+
 Si PowerShell bloquea la ejecución de scripts, usa `cmd /c "npm ..."` o permite scripts para el usuario:
 
 ```powershell
@@ -81,4 +84,5 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ---
+
 Si quieres, comito este README y lo subo al remoto ahora (lo haré automáticamente si me confirmas). También puedo crear un `README.es.md` o añadir secciones de contribución/estilo.
