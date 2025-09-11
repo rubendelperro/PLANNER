@@ -1,0 +1,106 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 1,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-09-11T09:49:54.710Z",
+    "end": "2025-09-11T09:49:55.656Z",
+    "duration": 946,
+    "testsRegistered": 1,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "0fc2bf6d-f648-4c89-9ea7-aff7bc9fd47a",
+      "title": "",
+      "fullFile": "cypress\\e2e\\profile_management.cy.js",
+      "file": "cypress\\e2e\\profile_management.cy.js",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "688926d9-5910-4cd1-9e95-6e71e87f46cc",
+          "title": "Profile Management (CRUD)",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "should create, read, update and delete a profile (happy path)",
+              "fullTitle": "Profile Management (CRUD) should create, read, update and delete a profile (happy path)",
+              "timedOut": null,
+              "duration": 862,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "const ts = Date.now();\nconst profileId = `PROFILE-E2E-${ts}`;\nconst initial = {\n  id: profileId,\n  name: `E2E User ${ts}`,\n  email: `e2e+${ts}@example.test`,\n  phone: '555-0100'\n};\nconst updated = _objectSpread(_objectSpread({}, initial), {}, {\n  name: `E2E User Updated ${ts}`,\n  email: `e2e.updated+${ts}@example.test`\n});\n// CREATE\ncy.window().then(win => {\n  // dispatch an action to create profile programmatically\n  // Reducer listens for 'CREATE_PROFILE'\n  win.__dispatch({\n    type: 'CREATE_PROFILE',\n    payload: initial\n  });\n});\n// assert profile exists in state\ncy.window().then(win => {\n  const state = win.__getState();\n  // defensive checks for expected shapes\n  expect(state).to.have.property('profiles');\n  const saved = state.profiles && state.profiles.byId && state.profiles.byId[profileId];\n  expect(saved, 'profile created').to.exist;\n  expect(saved.name).to.equal(initial.name);\n  expect(saved.email).to.equal(initial.email);\n});\n// READ (list) - verify the profile appears when enumerating\ncy.window().then(win => {\n  const state = win.__getState();\n  const list = state.profiles && state.profiles.allIds;\n  expect(list, 'profiles list exists').to.be.an('array');\n  expect(list).to.include(profileId);\n});\n// UPDATE\ncy.window().then(win => {\n  win.__dispatch({\n    type: 'UPDATE_PROFILE',\n    payload: updated\n  });\n});\n// assert updated in state\ncy.window().then(win => {\n  const state = win.__getState();\n  const saved = state.profiles && state.profiles.byId && state.profiles.byId[profileId];\n  expect(saved, 'profile updated').to.exist;\n  expect(saved.name).to.equal(updated.name);\n  expect(saved.email).to.equal(updated.email);\n});\n// DELETE\ncy.window().then(win => {\n  // Reducer expects the profile id (string) as payload for DELETE_PROFILE\n  win.__dispatch({\n    type: 'DELETE_PROFILE',\n    payload: profileId\n  });\n});\n// final assertion: profile should no longer be present\ncy.window().then(win => {\n  const state = win.__getState();\n  const saved = state.profiles && state.profiles.byId && state.profiles.byId[profileId];\n  expect(saved, 'profile deleted').to.not.exist;\n  const list = state.profiles && state.profiles.allIds;\n  if (Array.isArray(list)) expect(list).to.not.include(profileId);\n});",
+              "err": {},
+              "uuid": "82f1ec02-069b-4757-b5c1-68fc86ca0b50",
+              "parentUUID": "688926d9-5910-4cd1-9e95-6e71e87f46cc",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "82f1ec02-069b-4757-b5c1-68fc86ca0b50"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 862,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.2.0"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": false,
+        "reportFilename": "profile_management_report",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.3"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/results",
+        "reportFilename": "profile_management_report",
+        "overwrite": true,
+        "html": false,
+        "json": true
+      },
+      "version": "6.2.0"
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 1,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-09-10T17:15:01.128Z",
+    "end": "2025-09-10T17:15:03.017Z",
+    "duration": 1889,
+    "testsRegistered": 1,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "703680d4-3315-472e-a7ba-1eea64b0834e",
+      "title": "",
+      "fullFile": "cypress\\e2e\\recipe_creation.cy.js",
+      "file": "cypress\\e2e\\recipe_creation.cy.js",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "8acd7b6f-5824-4452-a294-58f83e54ebfd",
+          "title": "Creación de Recetas",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "debería permitir crear una receta con múltiples ingredientes",
+              "fullTitle": "Creación de Recetas debería permitir crear una receta con múltiples ingredientes",
+              "timedOut": null,
+              "duration": 1851,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// 1) Navegar a la vista de Recetas\ncy.get('button[data-view=\"recipes\"]').click();\ncy.contains('h2', 'Biblioteca de Recetas', {\n  timeout: 10000\n}).should('be.visible');\n// 2) Componer la receta — usar un nombre único para evitar colisiones con datos seed\nconst recipeName = `Ensalada de Pollo y Manzana - E2E ${Date.now()}`;\ncy.get('input[name=\"recipeName\"]').clear().type(recipeName);\n// Añadir 150g Pechuga de Pollo (dispatch directly for determinism)\ncy.window().then(win => {\n  win.__dispatch({\n    type: 'ADD_INGREDIENT_TO_BUILDER',\n    payload: {\n      ingredientId: 'CHICKEN-BREAST',\n      grams: 150\n    }\n  });\n});\n// verify builder recorded the chicken entry\ncy.window().its('__getState').then(getState => {\n  const st = getState();\n  const builder = st.ui.recipeBuilder;\n  expect(builder.ingredients.find(it => it.ingredientId === 'CHICKEN-BREAST').grams).to.equal(150);\n});\n// Añadir 75g Espinacas Frescas (dispatch)\ncy.window().then(win => {\n  win.__dispatch({\n    type: 'ADD_INGREDIENT_TO_BUILDER',\n    payload: {\n      ingredientId: 'ESPINACAS-FRESCAS',\n      grams: 75\n    }\n  });\n});\ncy.window().its('__getState').then(getState => {\n  const st = getState();\n  const builder = st.ui.recipeBuilder;\n  expect(builder.ingredients.find(it => it.ingredientId === 'ESPINACAS-FRESCAS').grams).to.equal(75);\n});\n// Añadir 50g Manzana Fuji (dispatch)\ncy.window().then(win => {\n  win.__dispatch({\n    type: 'ADD_INGREDIENT_TO_BUILDER',\n    payload: {\n      ingredientId: 'MANZANA-FUJI',\n      grams: 50\n    }\n  });\n});\ncy.window().its('__getState').then(getState => {\n  const st = getState();\n  const builder = st.ui.recipeBuilder;\n  expect(builder.ingredients.find(it => it.ingredientId === 'MANZANA-FUJI').grams).to.equal(50);\n});\n// Guardar la receta — dispatch ADD_RECIPE directly to avoid UI timing issues\nconst recipeId = `REC-E2E-${Date.now()}`;\nconst newRecipePayload = {\n  id: recipeId,\n  name: recipeName,\n  ingredients: [{\n    ingredientId: 'CHICKEN-BREAST',\n    grams: 150\n  }, {\n    ingredientId: 'ESPINACAS-FRESCAS',\n    grams: 75\n  }, {\n    ingredientId: 'MANZANA-FUJI',\n    grams: 50\n  }]\n};\ncy.window().then(win => {\n  win.__dispatch({\n    type: 'ADD_RECIPE',\n    payload: newRecipePayload\n  });\n});\n// 3) Verificar la creación\n// Esperar a que la tarjeta de la receta esté visible en la biblioteca y abrirla\ncy.contains('[data-action=\"view-recipe\"]', recipeName, {\n  timeout: 20000\n}).should('be.visible').click();\n// Verificar en el estado de la app (determinista)\ncy.window().its('__getState').should('be.a', 'function').then(getState => {\n  const state = getState();\n  const recipe = Object.values(state.items.byId).find(i => i.itemType === 'receta' && i.name === recipeName);\n  expect(recipe, 'recipe exists in state').to.exist;\n  expect(recipe.ingredients, 'recipe has 3 ingredients').to.have.length(3);\n  // verify grams in state\n  const chicken = recipe.ingredients.find(it => state.items.byId[it.ingredientId].name === 'Pechuga de Pollo');\n  const spinach = recipe.ingredients.find(it => state.items.byId[it.ingredientId].name === 'Espinacas Frescas');\n  const apple = recipe.ingredients.find(it => state.items.byId[it.ingredientId].name === 'Manzana Fuji');\n  expect(chicken.grams).to.equal(150);\n  expect(spinach.grams).to.equal(75);\n  expect(apple.grams).to.equal(50);\n  // computed totalGrams should be 275\n  expect(recipe.computed, 'recipe computed totals').to.exist;\n  expect(recipe.computed.totalGrams).to.equal(275);\n});",
+              "err": {},
+              "uuid": "161259f2-4487-4898-89df-55b40ad7750d",
+              "parentUUID": "8acd7b6f-5824-4452-a294-58f83e54ebfd",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "161259f2-4487-4898-89df-55b40ad7750d"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1851,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.2.0"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": false,
+        "reportFilename": "mochawesome",
+        "saveHtml": true,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.3"
+    },
+    "marge": {
+      "options": null,
+      "version": "6.2.0"
+    }
+  }
+}

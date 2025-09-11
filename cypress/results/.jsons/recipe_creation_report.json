@@ -1,0 +1,111 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 0,
+    "pending": 0,
+    "failures": 1,
+    "start": "2025-09-10T16:15:18.758Z",
+    "end": "2025-09-10T16:15:25.733Z",
+    "duration": 6975,
+    "testsRegistered": 1,
+    "passPercent": 0,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "023a318e-6602-4f35-a089-9a283c8d5217",
+      "title": "",
+      "fullFile": "cypress\\e2e\\recipe_creation.cy.js",
+      "file": "cypress\\e2e\\recipe_creation.cy.js",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "6c874ad8-aa77-477a-b451-eac37d7445a9",
+          "title": "Creación de Recetas",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "debería permitir crear una receta con múltiples ingredientes",
+              "fullTitle": "Creación de Recetas debería permitir crear una receta con múltiples ingredientes",
+              "timedOut": null,
+              "duration": 6946,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": "{\n  \"title\": \"cypress-mochawesome-reporter-screenshots\",\n  \"value\": [\n    [\n      \"\\\\recipe_creation.cy.js\\\\Creación de Recetas -- debería permitir crear una receta con múltiples ingredientes (failed).png\"\n    ]\n  ]\n}",
+              "code": "// 1) Navegar a la vista de Recetas\ncy.get('button[data-view=\"recipes\"]').click();\ncy.contains('h2', 'Biblioteca de Recetas', {\n  timeout: 10000\n}).should('be.visible');\n// 2) Componer la receta\ncy.get('input[name=\"recipeName\"]').clear().type('Ensalada de Pollo y Manzana');\n// Añadir 150g Pechuga de Pollo\ncy.get('select[name=\"ingredientSelect\"]').select('Pechuga de Pollo');\ncy.get('input[name=\"grams\"]').clear().type('150');\ncy.get('#add-ingredient-to-recipe-btn').click();\n// Añadir 75g Espinacas Frescas\ncy.get('select[name=\"ingredientSelect\"]').select('Espinacas Frescas');\ncy.get('input[name=\"grams\"]').clear().type('75');\ncy.get('#add-ingredient-to-recipe-btn').click();\n// Añadir 50g Manzana Fuji\ncy.get('select[name=\"ingredientSelect\"]').select('Manzana Fuji');\ncy.get('input[name=\"grams\"]').clear().type('50');\ncy.get('#add-ingredient-to-recipe-btn').click();\n// Guardar la receta\ncy.contains('button', 'Guardar Receta').click();\n// 3) Verificar la creación\n// Buscar la tarjeta de la receta en la biblioteca y abrirla\ncy.contains('[data-action=\"view-recipe\"]', 'Ensalada de Pollo y Manzana', {\n  timeout: 10000\n}).should('be.visible').click();\n// Verificar título en detalle\ncy.contains('h2', 'Ensalada de Pollo y Manzana', {\n  timeout: 10000\n}).should('be.visible');\n// Verificar ingredientes con sus pesos\ncy.contains('150g').should('exist');\ncy.contains('75g').should('exist');\ncy.contains('50g').should('exist');\n// Verificar peso por ración total (275g)\ncy.get('.text-2xl.font-bold.text-blue-600').should('contain', '275g');",
+              "err": {
+                "message": "AssertionError: Timed out retrying after 4000ms: Expected to find content: '150g' but never did.",
+                "estack": "AssertionError: Timed out retrying after 4000ms: Expected to find content: '150g' but never did.\n    at Context.eval (webpack://1.0/./cypress/e2e/recipe_creation.cy.js:52:24)",
+                "diff": null
+              },
+              "uuid": "8a3d5e8b-1a6b-4526-89cb-37579aed33fb",
+              "parentUUID": "6c874ad8-aa77-477a-b451-eac37d7445a9",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "8a3d5e8b-1a6b-4526-89cb-37579aed33fb"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 6946,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.2.0"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": false,
+        "reportFilename": "recipe_creation_report",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.3"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress\\results\\.jsons",
+        "reportFilename": "recipe_creation_report",
+        "quiet": false,
+        "overwrite": false,
+        "html": false,
+        "json": true
+      },
+      "version": "6.2.0"
+    }
+  }
+}
