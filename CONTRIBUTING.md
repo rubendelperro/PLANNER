@@ -80,6 +80,24 @@ Plantilla mínima para PR (copiar en la descripción)
 - Validación headed (visual): yes/no
 - Notas: si se usó `--no-verify`, explicar por qué y adjuntar `eslint-debug.txt` si existe.
 
+## Checks / Test results (plantilla para PR)
+
+Incluye un breve resumen de los tests y un enlace al JSON de mochawesome para referencia en CI. Copia y pega el bloque siguiente en la descripción de la PR y ajusta los valores:
+
+```text
+Checks / Test results
+- Cypress: <spec_file> — <tests> tests, <passes> passed, <failures> failed, <duration> ms
+- Report: cypress/results/<report_filename>.json
+```
+
+Ejemplo concreto para el run local de verificación:
+
+```text
+Checks / Test results
+- Cypress: nutrient_manager.cy.js — 1 test, 1 passed, 0 failed, 1145 ms
+- Report: cypress/results/nutrient_manager_report.json
+```
+
 Reglas operativas (resumen)
 
 - No commitear artefactos generados.
