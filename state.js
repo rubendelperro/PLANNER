@@ -6,6 +6,7 @@ import {
   SLOTS,
   createRecipeEditorState,
 } from './utils.js';
+import { profilesReducer } from './state_slices/profiles.reducer.js';
 import { calculateRecipeTotals, initializeSelectors } from './selectors.js';
 import { render, initializeRenderer } from './render.js';
 import { initializeEvents } from './events.js';
@@ -37,106 +38,23 @@ export function dispatch(action) {
 // Main Reducer (using Immer for immutability)
 const reducer = immer.produce((draftState, action) => {
   switch (action.type) {
-    case 'SAVE_PROFILE': {
-      const { name, ...profileData } = action.payload;
-      const profile = draftState.profiles.byId[draftState.ui.activeProfileId];
-      if (profile && profile.isDefault) {
-        return;
-      }
-      if (!name || name.trim() === '') {
-        if (!draftState.ui) draftState.ui = {};
-        draftState.ui.profileError = 'El nombre no puede estar vacío';
-        break;
-      }
-      // Limpiar error si existía
-      if (!draftState.ui) draftState.ui = {};
-      draftState.ui.profileError = null;
-      // Lógica normal para guardar el perfil
-      const id =
-        profileData.id ||
-        (profileData.id === undefined ? undefined : profileData.id);
-      if (id) {
-        draftState.profiles.byId[id] = {
-          ...draftState.profiles.byId[id],
-          name: name.trim(),
-          ...profileData,
-        };
-        if (!draftState.profiles.allIds.includes(id)) {
-          draftState.profiles.allIds.push(id);
-        }
-        draftState.ui.activeProfileId = id;
-      }
+    case 'SAVE_PROFILE':
+    case 'CREATE_PROFILE':
+    case 'DELETE_PROFILE':
+    case 'UPDATE_PROFILE':
+    case 'UPDATE_PROFILE_TRACKED_NUTRIENTS':
+    case 'SET_PERSONAL_GOAL':
+    case 'SET_ACTIVE_PROFILE': {
+      // Delegate profile-related actions to profilesReducer
+      if (profilesReducer(draftState, action)) break;
       break;
     }
+
     case 'INIT_DATA': {
       Object.assign(draftState, action.payload);
       break;
     }
-    case 'CREATE_PROFILE': {
-      const newProfile = action.payload;
-      draftState.profiles.byId[newProfile.id] = newProfile;
-      draftState.profiles.allIds.push(newProfile.id);
-      draftState.ui.activeProfileId = newProfile.id;
-      break;
-    }
-    case 'DELETE_PROFILE': {
-      const profileIdToDelete = action.payload;
-      if (draftState.profiles.byId[profileIdToDelete]?.isDefault) {
-        Logger.warn(
-          'Attempted to delete the default profile. Operation aborted.'
-        );
-        break;
-      }
-      delete draftState.profiles.byId[profileIdToDelete];
-      draftState.profiles.allIds = draftState.profiles.allIds.filter(
-        (id) => id !== profileIdToDelete
-      );
-      draftState.ui.activeProfileId = 'DEFAULT-PROFILE';
-      break;
-    }
-    case 'UPDATE_PROFILE': {
-      const { id, ...dataToUpdate } = action.payload;
-      const profile = draftState.profiles.byId[id];
-      if (!profile || profile.isDefault) break;
-
-      if (dataToUpdate.age !== undefined)
-        dataToUpdate.age = Math.max(0, parseFloat(dataToUpdate.age) || 0);
-      if (dataToUpdate.weight !== undefined)
-        dataToUpdate.weight = Math.max(0, parseFloat(dataToUpdate.weight) || 0);
-      if (dataToUpdate.height !== undefined)
-        dataToUpdate.height = Math.max(0, parseFloat(dataToUpdate.height) || 0);
-
-      Object.assign(profile, dataToUpdate);
-      break;
-    }
-    case 'UPDATE_PROFILE_TRACKED_NUTRIENTS': {
-      const { profileId, nutrients } = action.payload;
-      const profile = draftState.profiles.byId[profileId];
-      if (profile) {
-        profile.trackedNutrients = nutrients;
-      }
-      break;
-    }
-    case 'SET_PERSONAL_GOAL': {
-      let { profileId, nutrientId, value } = action.payload;
-      const profile = draftState.profiles.byId[profileId];
-      if (!profile || profile.isDefault) break;
-
-      if (value !== null && value !== '') {
-        value = Math.max(0, parseFloat(value) || 0);
-      }
-
-      if (value === null || value === '') {
-        delete profile.personalGoals[nutrientId];
-      } else {
-        profile.personalGoals[nutrientId] = value;
-      }
-      break;
-    }
-    case 'SET_ACTIVE_PROFILE': {
-      draftState.ui.activeProfileId = action.payload;
-      break;
-    }
+    // profile actions moved to profiles.reducer.js and handled above
     case 'CREATE_ITEM': {
       const { name } = action.payload;
       const id = `ING-${name.toUpperCase().replace(/\s/g, '_')}-${new Date().getTime()}`;

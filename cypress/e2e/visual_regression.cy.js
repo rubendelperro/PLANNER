@@ -331,4 +331,26 @@ describe('Visual regression: planner main view baseline', () => {
         }
       });
   });
+
+  it('should correctly render the Nutrient Manager list', () => {
+    // Visit the app root
+    cy.visit('/');
+
+    // Navigate to settings view
+    cy.get('button[data-view="settings"]').click();
+    cy.wait(250);
+
+    // Ensure the nutrient manager container exists and is visible
+    cy.get('#nutrient-manager-list').should('exist').and('be.visible');
+
+    // Take a Percy snapshot scoped to the nutrient manager list
+    if (typeof cy.percySnapshot === 'function') {
+      cy.percySnapshot('Nutrient Manager Component', {
+        scope: '#nutrient-manager-list',
+      });
+    } else {
+      // Fallback: take a scoped screenshot if Percy isn't available
+      cy.get('#nutrient-manager-list').screenshot('nutrient-manager-list-raw');
+    }
+  });
 });
