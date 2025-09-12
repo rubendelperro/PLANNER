@@ -37,6 +37,37 @@ export function dispatch(action) {
 // Main Reducer (using Immer for immutability)
 const reducer = immer.produce((draftState, action) => {
   switch (action.type) {
+    case 'SAVE_PROFILE': {
+      const { name, ...profileData } = action.payload;
+      const profile = draftState.profiles.byId[draftState.ui.activeProfileId];
+      if (profile && profile.isDefault) {
+        return;
+      }
+      if (!name || name.trim() === '') {
+        if (!draftState.ui) draftState.ui = {};
+        draftState.ui.profileError = 'El nombre no puede estar vacío';
+        break;
+      }
+      // Limpiar error si existía
+      if (!draftState.ui) draftState.ui = {};
+      draftState.ui.profileError = null;
+      // Lógica normal para guardar el perfil
+      const id =
+        profileData.id ||
+        (profileData.id === undefined ? undefined : profileData.id);
+      if (id) {
+        draftState.profiles.byId[id] = {
+          ...draftState.profiles.byId[id],
+          name: name.trim(),
+          ...profileData,
+        };
+        if (!draftState.profiles.allIds.includes(id)) {
+          draftState.profiles.allIds.push(id);
+        }
+        draftState.ui.activeProfileId = id;
+      }
+      break;
+    }
     case 'INIT_DATA': {
       Object.assign(draftState, action.payload);
       break;
