@@ -1,3 +1,4 @@
+import '@cypress/code-coverage/support';
 import '@percy/cypress';
 import 'cypress-mochawesome-reporter/register';
 import './commands';

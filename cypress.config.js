@@ -22,6 +22,43 @@ export default defineConfig({
   e2e: {
     specPattern: 'cypress/e2e/**/*.cy.js',
     supportFile: 'cypress/support/e2e.js',
+    setupNodeEvents(on, config) {
+      const { spawn } = require('child_process');
+      const waitOn = require('wait-on');
+
+      // Start a vite dev server as a subprocess so vite-plugin-istanbul runs
+      const viteProcess = spawn('npx', ['vite', '--port', '5173'], {
+        cwd: process.cwd(),
+        shell: true,
+        stdio: 'inherit',
+      });
+
+      // Wait until the dev server is serving
+      waitOn(
+        { resources: ['http://localhost:5173'], timeout: 30000 },
+        (err) => {
+          if (err) {
+            console.error('Vite dev server failed to start', err);
+          } else {
+            console.log('Vite dev server started for Cypress e2e tests');
+          }
+        }
+      );
+
+      // Ensure the vite subprocess is killed when Cypress exits
+      process.on('exit', () => {
+        try {
+          viteProcess.kill();
+        } catch (e) {}
+      });
+
+      // Register code-coverage task
+      require('@cypress/code-coverage/task')(on, config);
+
+      // Set baseUrl so Cypress hits the Vite dev server
+      config.baseUrl = 'http://localhost:5173';
+      return config;
+    },
   },
   component: {
     // Use a minimal HTML host for component tests so the full app bundle
