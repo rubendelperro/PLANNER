@@ -1069,7 +1069,7 @@ function _renderPlannerView() {
                                     </div>
                                     <div>
                                         <h4 class="font-semibold mb-2 text-gray-800">Panel de Control Diario</h4>
-                                        <div class="space-y-2 text-sm">
+                                        <div class="space-y-2 text-sm" data-test="daily-control-panel">
                                         ${dayAnalysis.length > 0 ? dayAnalysis.map((nutrient) => `<div><div class="flex justify-between font-medium"><span>${nutrient.name}</span><span>${nutrient.value}${nutrient.unit} ${nutrient.target ? `/ ${nutrient.target.toFixed(0)}${nutrient.unit}` : ''}</span></div><div class="progress-bar mt-1 h-2"><div class="progress-bar-inner ${statusColors[nutrient.status]}" style="width: ${nutrient.percentage}%;"></div></div></div>`).join('') : '<p class="text-gray-400 italic">Sin datos para analizar</p>'}
                                         </div>
                                     </div>

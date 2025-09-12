@@ -5,9 +5,9 @@
     "passes": 1,
     "pending": 0,
     "failures": 0,
-    "start": "2025-09-11T09:49:54.710Z",
-    "end": "2025-09-11T09:49:55.656Z",
-    "duration": 946,
+    "start": "2025-09-12T08:35:05.212Z",
+    "end": "2025-09-12T08:35:06.024Z",
+    "duration": 812,
     "testsRegistered": 1,
     "passPercent": 100,
     "pendingPercent": 0,
@@ -18,7 +18,7 @@
   },
   "results": [
     {
-      "uuid": "0fc2bf6d-f648-4c89-9ea7-aff7bc9fd47a",
+      "uuid": "b70a8b03-cc8d-4a79-a1b8-4703f216bc1d",
       "title": "",
       "fullFile": "cypress\\e2e\\profile_management.cy.js",
       "file": "cypress\\e2e\\profile_management.cy.js",
@@ -27,7 +27,7 @@
       "tests": [],
       "suites": [
         {
-          "uuid": "688926d9-5910-4cd1-9e95-6e71e87f46cc",
+          "uuid": "a6bcd1d3-2e34-4bc4-b8d5-49d66a6fa8dc",
           "title": "Profile Management (CRUD)",
           "fullFile": "",
           "file": "",
@@ -38,27 +38,29 @@
               "title": "should create, read, update and delete a profile (happy path)",
               "fullTitle": "Profile Management (CRUD) should create, read, update and delete a profile (happy path)",
               "timedOut": null,
-              "duration": 862,
+              "duration": 783,
               "state": "passed",
               "speed": "fast",
               "pass": true,
               "fail": false,
               "pending": false,
               "context": null,
-              "code": "const ts = Date.now();\nconst profileId = `PROFILE-E2E-${ts}`;\nconst initial = {\n  id: profileId,\n  name: `E2E User ${ts}`,\n  email: `e2e+${ts}@example.test`,\n  phone: '555-0100'\n};\nconst updated = _objectSpread(_objectSpread({}, initial), {}, {\n  name: `E2E User Updated ${ts}`,\n  email: `e2e.updated+${ts}@example.test`\n});\n// CREATE\ncy.window().then(win => {\n  // dispatch an action to create profile programmatically\n  // Reducer listens for 'CREATE_PROFILE'\n  win.__dispatch({\n    type: 'CREATE_PROFILE',\n    payload: initial\n  });\n});\n// assert profile exists in state\ncy.window().then(win => {\n  const state = win.__getState();\n  // defensive checks for expected shapes\n  expect(state).to.have.property('profiles');\n  const saved = state.profiles && state.profiles.byId && state.profiles.byId[profileId];\n  expect(saved, 'profile created').to.exist;\n  expect(saved.name).to.equal(initial.name);\n  expect(saved.email).to.equal(initial.email);\n});\n// READ (list) - verify the profile appears when enumerating\ncy.window().then(win => {\n  const state = win.__getState();\n  const list = state.profiles && state.profiles.allIds;\n  expect(list, 'profiles list exists').to.be.an('array');\n  expect(list).to.include(profileId);\n});\n// UPDATE\ncy.window().then(win => {\n  win.__dispatch({\n    type: 'UPDATE_PROFILE',\n    payload: updated\n  });\n});\n// assert updated in state\ncy.window().then(win => {\n  const state = win.__getState();\n  const saved = state.profiles && state.profiles.byId && state.profiles.byId[profileId];\n  expect(saved, 'profile updated').to.exist;\n  expect(saved.name).to.equal(updated.name);\n  expect(saved.email).to.equal(updated.email);\n});\n// DELETE\ncy.window().then(win => {\n  // Reducer expects the profile id (string) as payload for DELETE_PROFILE\n  win.__dispatch({\n    type: 'DELETE_PROFILE',\n    payload: profileId\n  });\n});\n// final assertion: profile should no longer be present\ncy.window().then(win => {\n  const state = win.__getState();\n  const saved = state.profiles && state.profiles.byId && state.profiles.byId[profileId];\n  expect(saved, 'profile deleted').to.not.exist;\n  const list = state.profiles && state.profiles.allIds;\n  if (Array.isArray(list)) expect(list).to.not.include(profileId);\n});",
+              "code": "// Load fixture data for profile templates and build runtime values\ncy.fixture('profiles/e2e_user.json').then(f => {\n  const ts = Date.now();\n  const profileId = `${f.idPrefix}-${ts}`;\n  const initial = {\n    id: profileId,\n    name: `${f.initial.name} ${ts}`,\n    email: f.initial.emailTemplate.replace('{{ts}}', ts),\n    phone: f.initial.phone\n  };\n  const updated = _objectSpread(_objectSpread({}, initial), {}, {\n    name: `${f.initial.name} ${f.updated.nameSuffix} ${ts}`,\n    email: f.updated.emailTemplate.replace('{{ts}}', ts)\n  });\n  // CREATE\n  cy.createProfile(initial).then(saved => {\n    expect(saved, 'profile created').to.exist;\n    expect(saved.name).to.equal(initial.name);\n    expect(saved.email).to.equal(initial.email);\n  });\n  // READ (list)\n  cy.getState().then(state => {\n    const list = state.profiles && state.profiles.allIds;\n    expect(list, 'profiles list exists').to.be.an('array');\n    expect(list).to.include(profileId);\n  });\n  // UPDATE\n  cy.updateProfile(updated).then(saved => {\n    expect(saved, 'profile updated').to.exist;\n    expect(saved.name).to.equal(updated.name);\n    expect(saved.email).to.equal(updated.email);\n  });\n  // DELETE\n  cy.deleteProfile(profileId).then(deleted => {\n    expect(deleted, 'profile deleted').to.be.true;\n  });\n  // final check: profile absent (assert directly against state to avoid cached getter issues)\n  cy.getState().then(state => {\n    const saved = state && state.profiles && state.profiles.byId && state.profiles.byId[profileId];\n    expect(saved, 'profile removed from state').to.not.exist;\n    const list = state.profiles && state.profiles.allIds;\n    if (Array.isArray(list)) expect(list).to.not.include(profileId);\n  });\n});",
               "err": {},
-              "uuid": "82f1ec02-069b-4757-b5c1-68fc86ca0b50",
-              "parentUUID": "688926d9-5910-4cd1-9e95-6e71e87f46cc",
+              "uuid": "effef0fb-e98a-47d1-aa2d-f44a26d804e2",
+              "parentUUID": "a6bcd1d3-2e34-4bc4-b8d5-49d66a6fa8dc",
               "isHook": false,
               "skipped": false
             }
           ],
           "suites": [],
-          "passes": ["82f1ec02-069b-4757-b5c1-68fc86ca0b50"],
+          "passes": [
+            "effef0fb-e98a-47d1-aa2d-f44a26d804e2"
+          ],
           "failures": [],
           "pending": [],
           "skipped": [],
-          "duration": 862,
+          "duration": 783,
           "root": false,
           "rootEmpty": false,
           "_timeout": 2000
