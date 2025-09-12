@@ -1,0 +1,12 @@
+{
+  "idPrefix": "PROFILE-E2E",
+  "initial": {
+    "name": "E2E User",
+    "emailTemplate": "e2e+{{ts}}@example.test",
+    "phone": "555-0100"
+  },
+  "updated": {
+    "nameSuffix": "Updated",
+    "emailTemplate": "e2e.updated+{{ts}}@example.test"
+  }
+}
