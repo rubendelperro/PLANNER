@@ -2,6 +2,45 @@ name: Cypress Tests
 
 on:
   push:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18.18.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.18.0'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Run Cypress test suite (headless)
+        run: |
+          # Run the full Cypress suite headless and produce mochawesome JSON in cypress/results
+          npx cypress run --headless --reporter mochawesome --reporter-options "reportDir=cypress/results,reportFilename=ci_report,overwrite=true,html=false,json=true"
+
+      - name: Upload cypress/results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-results
+          path: cypress/results
+
+      - name: Upload mochawesome-report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mochawesome-report
+          path: mochawesome-report
+name: Cypress Tests
+
+on:
+  push:
     branches:
       - main
 
