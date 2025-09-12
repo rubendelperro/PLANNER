@@ -27,11 +27,14 @@ describe('Visual regression: planner main view baseline', () => {
     cy.wait(300);
 
     // Capture snapshot using Percy (recommended for Cypress v15+)
-    // If Percy isn't installed, fallback to saving a screenshot for manual baseline
-    if (Cypress.Commands && Cypress.Commands.hasOwnProperty('percySnapshot')) {
-      cy.percySnapshot('planner-main-baseline');
-    } else {
-      cy.screenshot('planner-main-baseline-raw');
-    }
+    // If Percy isn't installed, fallback to saving a screenshot for manual baseline.
+    // Wrap the check in a cy.then to keep everything in Cypress' command queue.
+    cy.then(() => {
+      if (typeof cy.percySnapshot === 'function') {
+        cy.percySnapshot('planner-main-baseline');
+      } else {
+        cy.screenshot('planner-main-baseline-raw');
+      }
+    });
   });
 });
