@@ -7,6 +7,8 @@ import {
   createRecipeEditorState,
 } from './utils.js';
 import { profilesReducer } from './state_slices/profiles.reducer.js';
+import { plannerReducer } from './state_slices/planner.reducer.js';
+import { uiReducer } from './state_slices/ui.reducer.js';
 import { calculateRecipeTotals, initializeSelectors } from './selectors.js';
 import { render, initializeRenderer } from './render.js';
 import { initializeEvents } from './events.js';
@@ -269,37 +271,16 @@ const reducer = immer.produce((draftState, action) => {
       draftState.items.allIds.push(finalRecipe.id);
       break;
     }
-    case 'ASSIGN_ITEM_TO_SLOT': {
-      const { date, slot, id, grams } = action.payload;
-      const newItem = { id, grams };
-      const datePlan = draftState.planner[date] || {
-        breakfast: [],
-        lunch: [],
-        dinner: [],
-        snacks: [],
-      };
-      datePlan[slot].push(newItem);
-      draftState.planner[date] = datePlan;
-      break;
-    }
-    case 'REMOVE_PLANNED_MEAL': {
-      const { date, slot, itemIndex } = action.payload;
-      if (
-        draftState.planner[date] &&
-        draftState.planner[date][slot] &&
-        itemIndex >= 0 &&
-        itemIndex < draftState.planner[date][slot].length
-      ) {
-        draftState.planner[date][slot].splice(itemIndex, 1);
-      }
-      break;
-    }
-    case 'SET_ACTIVE_DAY': {
-      const newActiveDayId = action.payload;
-      draftState.ui.activePlannerDay =
-        newActiveDayId === draftState.ui.activePlannerDay
-          ? null
-          : newActiveDayId;
+    // Planner-related actions delegated to plannerReducer slice
+    case 'ASSIGN_ITEM_TO_SLOT':
+    case 'REMOVE_PLANNED_MEAL':
+    case 'SET_ACTIVE_DAY':
+    case 'COMPLEX_TOGGLE':
+    case 'CHANGE_WEEK':
+    case 'CHANGE_MONTH':
+    case 'GO_TO_TODAY':
+    case 'CLEAR_SELECTION': {
+      if (plannerReducer(draftState, action)) break;
       break;
     }
     case 'UPDATE_RECIPE_BUILDER_NAME': {
@@ -457,60 +438,21 @@ const reducer = immer.produce((draftState, action) => {
       draftState.ui.activePlannerDay = newDate.toISOString().split('T')[0];
       break;
     }
-    case 'SET_NEXUS_VIEW': {
-      draftState.ui.nexusView = action.payload;
-      break;
-    }
-    case 'GO_TO_TODAY': {
-      const todayStr = new Date().toISOString().split('T')[0];
-      draftState.ui.activePlannerDay = todayStr;
-      break;
-    }
-    case 'CLEAR_SELECTION': {
-      draftState.ui.selectedCells.clear();
-      break;
-    }
-    case 'ADD_NOTIFICATION': {
-      const newNotification = {
-        id: new Date().getTime(),
-        message: action.payload.message,
-        type: action.payload.type || 'info',
-      };
-      draftState.ui.notifications.push(newNotification);
-      break;
-    }
-    case 'REMOVE_NOTIFICATION': {
-      draftState.ui.notifications = draftState.ui.notifications.filter(
-        (n) => n.id !== action.payload
-      );
-      break;
-    }
+    // UI-related actions delegated to uiReducer
+    case 'SET_NEXUS_VIEW':
+    case 'GO_TO_TODAY':
+    case 'CLEAR_SELECTION':
+    case 'ADD_NOTIFICATION':
+    case 'REMOVE_NOTIFICATION':
     case 'SET_ACTIVE_VIEW':
-      draftState.ui.activeView = action.payload;
-      break;
     case 'OPEN_ITEM_MODAL':
-      draftState.ui.isItemModalOpen = true;
-      break;
     case 'CLOSE_ITEM_MODAL':
-      draftState.ui.isItemModalOpen = false;
-      draftState.ui.newItemName = ''; // Limpiar al cerrar
-      break;
-    case 'OPEN_DELETE_ITEM_MODAL': {
-      const { itemId, dependentRecipes } = action.payload;
-      draftState.ui.deleteItemModal = {
-        isOpen: true,
-        itemId,
-        dependentRecipes,
-      };
+    case 'OPEN_DELETE_ITEM_MODAL':
+    case 'CLOSE_DELETE_ITEM_MODAL': {
+      if (uiReducer(draftState, action)) break;
       break;
     }
-    case 'CLOSE_DELETE_ITEM_MODAL':
-      draftState.ui.deleteItemModal = {
-        isOpen: false,
-        itemId: null,
-        dependentRecipes: [],
-      };
-      break;
+
     case 'DELETE_INGREDIENT': {
       const itemId = action.payload;
       // Eliminar de items
