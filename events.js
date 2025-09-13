@@ -6,6 +6,12 @@ import {
   getWeekDates,
 } from './utils.js';
 import { findDependentRecipes } from './selectors.js';
+import {
+  handleProfileConfirmClick,
+  handleNewProfileClick,
+  handleDeleteProfileClick,
+  createDebouncedProfileUpdater,
+} from './components/profileFormHandlers.js';
 
 // Dependency Injection containers
 let dispatch = () => {};
@@ -21,16 +27,11 @@ export function initializeEvents(dispatchFn, getStateFn) {
   getState = getStateFn;
 
   // Initialize debounced functions specific to event handling
-  _debouncedProfileUpdate = debounce(function (form) {
-    const state = getState();
-    const formData = new FormData(form);
-    const updatedData = { id: state.ui.activeProfileId };
-    for (let [key, value] of formData.entries()) {
-      updatedData[key] =
-        isNaN(parseFloat(value)) || value === '' ? value : parseFloat(value);
-    }
-    dispatch({ type: 'UPDATE_PROFILE', payload: updatedData });
-  }, 500);
+  _debouncedProfileUpdate = createDebouncedProfileUpdater(
+    debounce,
+    dispatch,
+    getState
+  );
 
   _debouncedRecipeUpdate = debounce(function (form) {
     if (form && form.elements.recipeName) {
@@ -644,22 +645,22 @@ export function attachEventListeners(container) {
       );
       if (confirmProfileButton) {
         _debouncedProfileUpdate.cancel();
-        const selector = container.querySelector('#profile-selector');
-        dispatch({ type: 'SET_ACTIVE_PROFILE', payload: selector.value });
+        // delegate to profile form handler
+        handleProfileConfirmClick(container, dispatch, getState)();
         return;
       }
 
       const newProfileBtn = event.target.closest('#new-profile-btn');
       if (newProfileBtn) {
         _debouncedProfileUpdate.cancel();
-        actions.createProfile();
+        handleNewProfileClick(actions)();
         return;
       }
 
       const deleteProfileBtn = event.target.closest('#delete-profile-btn');
       if (deleteProfileBtn) {
         _debouncedProfileUpdate.cancel();
-        dispatch({ type: 'DELETE_PROFILE', payload: state.ui.activeProfileId });
+        handleDeleteProfileClick(dispatch, getState)();
         return;
       }
 
