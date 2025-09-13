@@ -3,9 +3,11 @@ name: CI - lint, unit and E2E
 on:
   pull_request:
     # Only run this workflow for PRs targeting main (feature branches will use ci.yml)
-    branches: [ main ]
-  push:
-    branches: [ main ]
+    branches: [main]
+
+concurrency:
+  group: ci-e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -25,6 +27,6 @@ jobs:
       - name: Start Vite
         run: npm run start:ci &
       - name: Wait for dev server
-        run: npx wait-on http://127.0.0.1:5173
+        run: npx wait-on http://127.0.0.1:5173 -t 60000
       - name: Run Cypress headless
         run: npx cypress run --browser electron --headless
