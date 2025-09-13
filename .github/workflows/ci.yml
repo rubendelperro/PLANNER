@@ -30,11 +30,11 @@ jobs:
       - name: Start dev server (background)
         run: |
           npm run dev -- --port 5173 &
-          npx wait-on http://localhost:5173 --timeout 60000
+          npx wait-on http://localhost:5173 --timeout 120000
 
       - name: Run Cypress contract spec
         uses: cypress-io/github-action@v6
         with:
-          start: false
           runTests: true
           spec: cypress/e2e/contracts.cy.js
+          browser: chrome
