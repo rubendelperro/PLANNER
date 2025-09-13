@@ -14,9 +14,13 @@ jobs:
       - name: Install Dependencies
         run: npm ci
       - name: Start Dev Server
-        run: npm install -g pnpm && pnpm --silent dev &
+        # Start Vite directly so we avoid global pnpm install differences and
+        # ensure the server binds to localhost where wait-on is checking.
+        run: npx vite --port 5173 --host 127.0.0.1 &
       - name: Wait for Server
-        run: npx wait-on http://localhost:5173 -t 30000
+        # Use 127.0.0.1 to avoid CI environments resolving localhost to IPv6 (::1)
+        # which can cause wait-on to miss a server bound to 127.0.0.1.
+        run: npx wait-on http://127.0.0.1:5173 -t 30000
       - name: Run Unit Tests
         run: npx vitest --run
       - name: Run Cypress E2E Tests
