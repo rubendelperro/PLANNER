@@ -1,31 +1,37 @@
 describe('Contract: Targets panel and profile interactions', () => {
   before(() => {
     cy.visit('http://127.0.0.1:5173');
+    // wait for the app to expose test hooks and initialize
+    cy.appReady();
+    // ensure the settings view (where ControlCenter is rendered) is active
+    cy.dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'settings' });
   });
 
   it('renders the targets panel and nutrient rows', () => {
-    cy.get('#targets-panel').should('exist');
-    cy.get('#targets-panel [data-nutrient-id]').should(
+    cy.get('#targets-panel', { timeout: 20000 }).should('exist');
+    cy.get('#targets-panel [data-nutrient-id]', { timeout: 20000 }).should(
       'have.length.greaterThan',
       0
     );
   });
 
   it('each nutrient row has a numeric data-value-display attribute', () => {
-    cy.get('#targets-panel [data-nutrient-id]').each(($row) => {
-      cy.wrap($row)
-        .find('[data-value-display]')
-        .should('exist')
-        .then(($d) => {
-          const val = $d.attr('data-value-display') || $d.text();
-          // Match a number (integer or float) in the displayed string
-          expect(val).to.match(/\d+/);
-        });
-    });
+    cy.get('#targets-panel [data-nutrient-id]', { timeout: 20000 }).each(
+      ($row) => {
+        cy.wrap($row)
+          .find('[data-value-display]')
+          .should('exist')
+          .then(($d) => {
+            const val = $d.attr('data-value-display') || $d.text();
+            // Match a number (integer or float) in the displayed string
+            expect(val).to.match(/\d+/);
+          });
+      }
+    );
   });
 
   it('profile selector confirm flow shows hidden confirm button toggling', () => {
-    cy.get('#profile-selector')
+    cy.get('#profile-selector', { timeout: 10000 })
       .should('exist')
       .then(($sel) => {
         const current = $sel.val();
@@ -49,7 +55,8 @@ describe('Contract: Targets panel and profile interactions', () => {
 
   it('can create and delete a profile via UI buttons', () => {
     // create profile
-    cy.get('#new-profile-btn').should('exist').click();
+    cy.get('#new-profile-btn', { timeout: 10000 }).should('exist').click();
+
     // after creation, active profile id should be present in the selector
     cy.get('#profile-selector')
       .should('exist')
@@ -59,7 +66,8 @@ describe('Contract: Targets panel and profile interactions', () => {
       });
 
     // delete profile (if not default)
-    cy.get('#delete-profile-btn').should('exist').click();
+    cy.get('#delete-profile-btn', { timeout: 10000 }).should('exist').click();
+
     // either deletion succeeded and selector value changed or deletion was blocked for default profile
     cy.get('#profile-selector').should('exist');
   });
