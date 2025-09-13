@@ -1,10 +1,15 @@
 describe('Contract: Targets panel and profile interactions', () => {
   before(() => {
-    cy.visit('http://127.0.0.1:5173');
+    // Visit root so baseUrl/CYPRESS_baseUrl works in CI
+    cy.visit('/');
     // wait for the app to expose test hooks and initialize
     cy.appReady();
-    // ensure the settings view (where ControlCenter is rendered) is active
-    cy.dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'settings' });
+    // Prefer using the real navigation button so events.js attaches handlers
+    cy.get('button[data-view="settings"]', { timeout: 10000 })
+      .should('exist')
+      .click();
+    // give the renderer a moment to re-render the new view
+    cy.get('#targets-panel', { timeout: 20000 }).should('exist');
   });
 
   it('renders the targets panel and nutrient rows', () => {
