@@ -27,6 +27,6 @@ jobs:
       - name: Start Vite
         run: npm run start:ci &
       - name: Wait for dev server
-        run: npx wait-on http://127.0.0.1:5173 -t 60000
+        run: "npx wait-on http://127.0.0.1:5173 -t 60000"
       - name: Run Cypress headless
         run: npx cypress run --browser electron --headless
