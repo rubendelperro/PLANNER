@@ -3,8 +3,11 @@ name: CI - unit + contract E2E
 on:
   push:
     branches: ['feat/refactor-reducers', 'main']
-  pull_request:
-    branches: ['feat/refactor-reducers', 'main']
+
+# Avoid duplicate runs for the same ref; prefer canceling older runs.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
