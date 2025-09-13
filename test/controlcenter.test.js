@@ -26,10 +26,10 @@ describe('ControlCenter component', () => {
 
     const html = renderControlCenter(mockState);
 
-    expect(html).toContain('#new-profile-btn');
-    expect(html).toContain('#profile-selector');
-    expect(html).toContain('#profile-form');
-    expect(html).toContain('#targets-panel');
+    expect(html).toContain('id="new-profile-btn"');
+    expect(html).toContain('id="profile-selector"');
+    expect(html).toContain('id="profile-form"');
+    expect(html).toContain('id="targets-panel"');
     expect(html).toContain('data-nutrient-id="n1"');
     expect(html).toContain('data-value-display');
   });
