@@ -1,3 +1,5 @@
+import * as selectors from '../selectors.js';
+
 export function renderControlCenter(state) {
   const { profiles, ui, items } = state;
   const activeProfile = profiles.byId[ui.activeProfileId];
@@ -6,6 +8,18 @@ export function renderControlCenter(state) {
   const formDisabledClasses = isDefaultProfileActive
     ? 'disabled:bg-gray-100 disabled:cursor-not-allowed'
     : '';
+
+  // Precompute active targets using the selector to keep template clean.
+  // The selector relies on injected getState in the real app; in tests it may
+  // not be initialized so we guard and fall back to reading from state.items
+  let activeTargetsMap = {};
+  try {
+    activeTargetsMap = selectors.getActiveNutritionalTargets() || {};
+  } catch (err) {
+    // Selector couldn't run (test env or not-initialized DI). We'll fallback
+    // to per-item stored info in state.items when available.
+    activeTargetsMap = {};
+  }
 
   return `
     <div class="bg-white p-6 rounded-lg shadow-md">
@@ -56,20 +70,28 @@ export function renderControlCenter(state) {
                 <div id="targets-panel" class="mt-4 max-h-60 overflow-y-auto">
                     <h3 class="font-semibold mb-2">Panel de Objetivos</h3>
                     ${(() => {
-                      const activeTargets =
-                        (typeof window !== 'undefined' && window.__getState
-                          ? window.__getState().items
-                          : state.items) || {};
+                      // Use the selector as the single source of truth for final target values
+                      const activeTargets = activeTargetsMap || {};
 
                       return (activeProfile?.trackedNutrients || [])
                         .map((nutrientId) => {
                           const def = items.byId[nutrientId];
                           if (!def) return '';
 
-                          const targetInfo =
-                            state && state.items
-                              ? state.items[nutrientId] || {}
-                              : {};
+                          let targetInfo = activeTargets[nutrientId] || {};
+                          // Fallback for test environments or older state shape
+                          if (
+                            !targetInfo ||
+                            Object.keys(targetInfo).length === 0
+                          ) {
+                            const stateItems =
+                              typeof window !== 'undefined' && window.__getState
+                                ? window.__getState().items
+                                : state.items;
+
+                            targetInfo =
+                              (stateItems && stateItems[nutrientId]) || {};
+                          }
                           const finalValue = targetInfo?.finalValue ?? null;
                           const source = targetInfo?.source ?? null;
                           const sourceName = targetInfo?.sourceName ?? '';
