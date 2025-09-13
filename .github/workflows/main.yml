@@ -14,13 +14,26 @@ jobs:
       - name: Install Dependencies
         run: npm ci
       - name: Start Dev Server
-        # Start Vite directly so we avoid global pnpm install differences and
-        # ensure the server binds to localhost where wait-on is checking.
-        run: npx vite --port 5173 --host 127.0.0.1 &
-      - name: Wait for Server
-        # Use 127.0.0.1 to avoid CI environments resolving localhost to IPv6 (::1)
-        # which can cause wait-on to miss a server bound to 127.0.0.1.
-        run: npx wait-on http://127.0.0.1:5173 -t 30000
+        # Start Vite bound to all interfaces to avoid address binding issues
+        run: npx vite --port 5173 --host 0.0.0.0 &
+      - name: Wait for Server (try multiple addresses)
+        # CI runners sometimes resolve localhost differently (IPv6/IPv4) or
+        # bind services to specific interfaces. Try both 127.0.0.1 and
+        # localhost with a longer timeout to reduce flakes.
+        run: |
+          set -e
+          echo "Waiting for http://127.0.0.1:5173 (30s)..."
+          if npx wait-on http://127.0.0.1:5173 -t 30000; then
+            echo "Server reachable at 127.0.0.1"
+            exit 0
+          fi
+          echo "Fallback to http://localhost:5173 (30s)..."
+          if npx wait-on http://localhost:5173 -t 30000; then
+            echo "Server reachable at localhost"
+            exit 0
+          fi
+          echo "Server did not become reachable on 127.0.0.1 or localhost"
+          exit 1
       - name: Run Unit Tests
         run: npx vitest --run
       - name: Run Cypress E2E Tests
