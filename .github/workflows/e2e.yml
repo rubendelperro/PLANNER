@@ -2,7 +2,8 @@ name: CI - lint, unit and E2E
 
 on:
   pull_request:
-    branches: [ main, feat/* ]
+    # Only run this workflow for PRs targeting main (feature branches will use ci.yml)
+    branches: [ main ]
   push:
     branches: [ main ]
 
