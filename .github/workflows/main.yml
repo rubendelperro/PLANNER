@@ -14,7 +14,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
       - name: Start Dev Server
-        run: npx vite &
+        run: npm install -g pnpm && pnpm --silent dev &
       - name: Wait for Server
         run: npx wait-on http://localhost:5173 -t 30000
       - name: Run Unit Tests
