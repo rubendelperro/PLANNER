@@ -40,4 +40,3 @@ Checklist
 - [x] Contract spec passes locally (headless)
 - [x] Contract spec passes in CI
 - [ ] Remove compatibility placeholders (post-merge)
-

@@ -26,4 +26,3 @@ Guidelines for changes
 
 - If you rename any of the critical selectors or attributes, update `DOM-CONTRACTS.md` and the contract spec `cypress/e2e/contracts.cy.js` in the same PR.
 - Keep changes backward-compatible where possible. If a temporary compatibility shim is required, include an explicit comment in `index.html` and add a TODO with an expected removal date.
-

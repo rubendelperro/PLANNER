@@ -1,4 +1,5 @@
 import * as selectors from '../selectors.js';
+import { renderProfileForm } from './ProfileForm.js';
 
 export function renderControlCenter(state) {
   const { profiles, ui, items } = state;
@@ -23,7 +24,7 @@ export function renderControlCenter(state) {
 
   return `
     <div class="bg-white p-6 rounded-lg shadow-md">
-      <div class="flex justify-between items-center mb-4">
+  <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Centro de Mando</h2>
         <div class="flex items-center gap-2">
           <select id="profile-selector" class="rounded-md border-gray-300 shadow-sm text-sm">
@@ -38,35 +39,8 @@ export function renderControlCenter(state) {
           <button id="new-profile-btn" title="Crear Nuevo Perfil" class="text-sm bg-green-500 text-white py-1 px-3 rounded-md hover:bg-green-600">+</button>
         </div>
       </div>
-      <button id="confirm-profile-change" class="hidden w-full bg-blue-500 text-white py-2 rounded-md mb-4">Cambiar Perfil</button>
-      <form id="profile-form" class="space-y-3 border-b pb-4">
-        <input type="text" name="name" value="${activeProfile?.name || ''}" placeholder="Nombre de Perfil" class="block w-full rounded-md border-gray-300 shadow-sm text-sm ${formDisabledClasses}" ${formDisabledState}>
-        ${ui.profileError ? `<p data-cy="profile-error" style="color:red;">${ui.profileError}</p>` : ''}
-                <div class="grid grid-cols-3 gap-2 mt-3">
-                    <input type="number" name="age" min="0" value="${activeProfile?.age || ''}" placeholder="Edad" class="block w-full rounded-md border-gray-300 shadow-sm text-sm ${formDisabledClasses}" ${formDisabledState}>
-                    <input type="number" name="weight" min="0" value="${activeProfile?.weight || ''}" placeholder="Peso (kg)" class="block w-full rounded-md border-gray-300 shadow-sm text-sm ${formDisabledClasses}" ${formDisabledState}>
-                    <input type="number" name="height" min="0" value="${activeProfile?.height || ''}" placeholder="Altura (cm)" class="block w-full rounded-md border-gray-300 shadow-sm text-sm ${formDisabledClasses}" ${formDisabledState}>
-                </div>
-                <select name="gender" class="mt-3 block w-full rounded-md border-gray-300 shadow-sm text-sm ${formDisabledClasses}" ${formDisabledState}>
-                    <option value="male" ${activeProfile?.gender === 'male' ? 'selected' : ''}>Masculino</option>
-                    <option value="female" ${activeProfile?.gender === 'female' ? 'selected' : ''}>Femenino</option>
-                </select>
-                <select name="activityLevel" class="mt-3 block w-full rounded-md border-gray-300 shadow-sm text-sm ${formDisabledClasses}" ${formDisabledState}>
-                    <option value="sedentary" ${activeProfile?.activityLevel === 'sedentary' ? 'selected' : ''}>Sedentario</option>
-                    <option value="light" ${activeProfile?.activityLevel === 'light' ? 'selected' : ''}>Ligero</option>
-                    <option value="moderate" ${activeProfile?.activityLevel === 'moderate' ? 'selected' : ''}>Moderado</option>
-                    <option value="high" ${activeProfile?.activityLevel === 'high' ? 'selected' : ''}>Alto</option>
-                    <option value="very_high" ${activeProfile?.activityLevel === 'very_high' ? 'selected' : ''}>Muy Alto</option>
-                </select>
-                <select name="goal" class="mt-3 block w-full rounded-md border-gray-300 shadow-sm text-sm ${formDisabledClasses}" ${formDisabledState}>
-                    <option value="maintain" ${activeProfile?.goal === 'maintain' ? 'selected' : ''}>Mantener</option>
-                    <option value="lose" ${activeProfile?.goal === 'lose' ? 'selected' : ''}>Perder</option>
-                    <option value="gain" ${activeProfile?.goal === 'gain' ? 'selected' : ''}>Ganar</option>
-                </select>
-                <div class="mt-4 flex justify-end">
-                    <button type="button" id="delete-profile-btn" class="text-sm bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 ${activeProfile?.isDefault ? 'opacity-50 cursor-not-allowed' : ''}" ${activeProfile?.isDefault ? 'disabled' : ''}>Eliminar Perfil</button>
-                </div>
-            </form>
+    <button id="confirm-profile-change" class="hidden w-full bg-blue-500 text-white py-2 rounded-md mb-4">Cambiar Perfil</button>
+    ${renderProfileForm(state)}
                 <div id="targets-panel" class="mt-4 max-h-60 overflow-y-auto">
                     <h3 class="font-semibold mb-2">Panel de Objetivos</h3>
                     ${(() => {
