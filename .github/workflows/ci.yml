@@ -1,0 +1,42 @@
+name: CI - unit + contract E2E
+
+on:
+  push:
+    branches: ['feat/refactor-reducers', 'main']
+  pull_request:
+    branches: ['feat/refactor-reducers', 'main']
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint || true
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Start dev server (background)
+        run: |
+          npx vite --port 5173 --host 127.0.0.1 &
+          npx wait-on http://127.0.0.1:5173 --timeout 120000
+
+      - name: Run Cypress contract spec
+        uses: cypress-io/github-action@v6
+        env:
+          CYPRESS_baseUrl: http://127.0.0.1:5173
+        with:
+          runTests: true
+          spec: cypress/e2e/contracts.cy.js
+          browser: edge

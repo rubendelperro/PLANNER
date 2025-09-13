@@ -1,0 +1,30 @@
+name: CI - lint, unit and E2E
+
+on:
+  pull_request:
+    # Only run this workflow for PRs targeting main (feature branches will use ci.yml)
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run lint
+        run: npm run lint --silent || true
+      - name: Run unit tests
+        run: npm run test:unit --silent
+      - name: Start Vite
+        run: npm run start:ci &
+      - name: Wait for dev server
+        run: npx wait-on http://127.0.0.1:5173
+      - name: Run Cypress headless
+        run: npx cypress run --browser electron --headless
