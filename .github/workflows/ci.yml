@@ -35,11 +35,12 @@ jobs:
           npx vite --port 5173 --host 127.0.0.1 &
           npx wait-on http://127.0.0.1:5173 --timeout 120000
 
-      - name: Run Cypress contract spec
+      - name: Run Cypress contract spec(s)
         uses: cypress-io/github-action@v6
         env:
           CYPRESS_baseUrl: http://127.0.0.1:5173
         with:
           runTests: true
-          spec: cypress/e2e/contracts.cy.js
+          # Run any contract specs that start with `contract` (includes contracts.cy.js and contract_targets.cy.js)
+          spec: cypress/e2e/contract*.cy.js
           browser: edge
