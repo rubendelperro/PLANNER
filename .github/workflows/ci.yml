@@ -13,10 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Use Node.js 20
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install dependencies
         run: npm ci
@@ -38,5 +38,3 @@ jobs:
           start: false
           runTests: true
           spec: cypress/e2e/contracts.cy.js
-        env:
-          CYPRESS_INSTALL_BINARY: 1
