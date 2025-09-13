@@ -19,3 +19,5 @@ cypress/results/
 mochawesome-report/
 node_modules/
 .eslintcache
+/.nyc_output/
+
