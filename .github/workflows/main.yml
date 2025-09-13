@@ -1,80 +1,23 @@
-name: Cypress Tests
+name: CI
 
-on:
-  push:
-    branches: [ main ]
+on: [push]
 
 jobs:
   test:
-    name: test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 18.18.0
+      - uses: actions/checkout@v4
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18.18.0'
-
-      - name: Install dependencies
-        run: |
-          npm ci
-
-      - name: Run Cypress test suite (headless)
-        run: |
-          # Run the full Cypress suite headless and produce mochawesome JSON in cypress/results
-          npx cypress run --headless --reporter mochawesome --reporter-options "reportDir=cypress/results,reportFilename=ci_report,overwrite=true,html=false,json=true"
-
-      - name: Upload cypress/results artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-results
-          path: cypress/results
-
-      - name: Upload mochawesome-report artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mochawesome-report
-          path: mochawesome-report
-name: Cypress Tests
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  test:
-    name: Run Cypress tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.18.0'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run Cypress (headless)
-        env:
-          CI: true
-        run: |
-          npx cypress run
-
-      - name: Upload Cypress results
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-results
-          path: |
-            cypress/results
-
-      - name: Upload mochawesome report
-        uses: actions/upload-artifact@v4
-        with:
-          name: mochawesome-report
-          path: mochawesome-report
+          node-version: 18
+      - name: Install Dependencies
+        run: npm ci
+      - name: Start Dev Server
+        run: npx vite &
+      - name: Wait for Server
+        run: npx wait-on http://localhost:5173 -t 30000
+      - name: Run Unit Tests
+        run: npx vitest --run
+      - name: Run Cypress E2E Tests
+        run: npx cypress run --headless --browser electron
