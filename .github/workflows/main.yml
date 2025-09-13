@@ -18,60 +18,11 @@ jobs:
           node-version: 20.19.0
       - name: Install Dependencies
         run: npm ci
-      - name: Show installed bins (diagnostic)
-        run: |
-          echo "ls node_modules/.bin (partial)"
-          ls -la node_modules/.bin | sed -n '1,200p' || true
-      - name: Show Node/NPM and vite version (diagnostic)
-        run: |
-          echo "node and npm versions"
-          node -v || true
-          npm -v || true
-          echo "vite --version (if installed)"
-          if [ -f ./node_modules/.bin/vite ]; then
-            ./node_modules/.bin/vite --version || true
-          else
-            echo "./node_modules/.bin/vite not found"
-          fi
-      - name: Start Dev Server (background with log)
-        # Start Vite bound to all interfaces using local bin and capture stdout/stderr to vite.log
-        run: |
-          echo "Starting vite in background (logs -> vite.log) via ./node_modules/.bin/vite"
-          ./node_modules/.bin/vite --port 5173 --host 0.0.0.0 > vite.log 2>&1 &
-          echo $! > vite.pid || true
-          # give vite a moment to produce initial output and show it so we can catch immediate errors
-          sleep 1
-          echo "--- initial vite.log ---"
-          sed -n '1,200p' vite.log || true
-      - name: Wait for Server (try multiple addresses)
-        # CI runners sometimes resolve localhost differently (IPv6/IPv4) or
-        # bind services to specific interfaces. Try both 127.0.0.1 and
-        # localhost with a longer timeout to reduce flakes.
-        run: |
-          set -e
-          echo "Waiting for http://127.0.0.1:5173 (30s)..."
-          if npx wait-on http://127.0.0.1:5173 -t 30000; then
-            echo "Server reachable at 127.0.0.1"
-            exit 0
-          fi
-          echo "Fallback to http://localhost:5173 (30s)..."
-          if npx wait-on http://localhost:5173 -t 30000; then
-            echo "Server reachable at localhost"
-            exit 0
-          fi
-          echo "Server did not become reachable on 127.0.0.1 or localhost"
-          echo "--- vite.log ---"
-          sed -n '1,200p' vite.log || true
-          echo "--- ls node_modules/.bin (partial) ---"
-          ls -la node_modules/.bin | sed -n '1,200p' || true
-          echo "--- ps aux (node processes) ---"
-          ps aux | egrep 'node|vite' || true
-          if [ -f vite.pid ]; then
-            echo "vite pid:" $(cat vite.pid)
-            echo "--- tail vite.log ---"
-            tail -n 200 vite.log || true
-          fi
-          exit 1
+      - name: Start Dev Server
+        # Start vite in background bound to all interfaces
+        run: npx vite --port 5173 --host 0.0.0.0 &
+      - name: Wait for Server
+        run: npx wait-on http://127.0.0.1:5173 -t 30000
       - name: Run Unit Tests
         run: npx vitest --run
       - name: Run Cypress E2E Tests
