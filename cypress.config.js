@@ -53,6 +53,35 @@ export default defineConfig({
       });
 
       // Register code-coverage task
+      // Small helper task to write JSON files from tests (used to capture
+      // window state when debugging failing E2E specs). Register this
+      // early so tests can rely on the task being available even if other
+      // plugins register later.
+      const fs = require('fs');
+      const path = require('path');
+      const os = require('os');
+      on('task', {
+        writeFile({ filePath, contents }) {
+          // To avoid triggering Vite file-watch reloads during a test run,
+          // write debugging artifacts to the OS temp directory instead of
+          // the project workspace. Use the basename so multiple runs don't
+          // collide on directories.
+          const base = path.basename(filePath);
+          const full = path.resolve(os.tmpdir(), base);
+          fs.mkdirSync(path.dirname(full), { recursive: true });
+          fs.writeFileSync(
+            full,
+            typeof contents === 'string'
+              ? contents
+              : JSON.stringify(contents, null, 2),
+            'utf8'
+          );
+          // Return where we wrote the file so the test can log/inspect if needed.
+          return full;
+        },
+      });
+
+      // Register code-coverage task
       require('@cypress/code-coverage/task')(on, config);
 
       // Set baseUrl so Cypress hits the Vite dev server
