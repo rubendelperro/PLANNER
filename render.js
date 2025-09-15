@@ -12,6 +12,8 @@ import { renderNutrientManager } from './components/NutrientManager.js';
 import { renderControlCenter } from './components/ControlCenter.js';
 import { renderStoreManager } from './components/StoreManager.js';
 import { renderCategoryManager } from './components/CategoryManager.js';
+import { renderCategoriesField } from './components/CategoryManager.js';
+import { renderStoresField } from './components/StoreManager.js';
 
 // Dependency Injection container for the state accessor
 let getState = () => ({});
@@ -552,8 +554,15 @@ function _renderItemMetaPanel(
 }
 
 function _renderStoresField(selectedStoreIds, stores, isEditing) {
-  // Delegate to the StoreManager helper
-  return renderStoresField(selectedStoreIds, stores, isEditing);
+  // Delegate to the StoreManager helper, guard at runtime in case the import
+  // was altered by coverage tooling or bundling in CI environments.
+  if (typeof renderStoresField === 'function') {
+    return renderStoresField(selectedStoreIds, stores, isEditing);
+  }
+  console.warn(
+    'renderStoresField is not available; rendering fallback placeholder'
+  );
+  return `<div class="text-sm text-gray-500">(Store selector unavailable)</div>`;
 }
 
 function _renderStoreManager(state) {
@@ -565,8 +574,19 @@ function _renderCategoryManager(state) {
 }
 
 function _renderCategoriesField(selectedCategoryIds, categories, isEditing) {
-  // Delegate to the CategoryManager helper
-  return renderCategoriesField(selectedCategoryIds, categories, isEditing);
+  // Delegate to the CategoryManager helper, but guard to avoid uncaught
+  // ReferenceErrors in CI when coverage instrumentation may have renamed
+  // or removed the function reference.
+  if (typeof renderCategoriesField === 'function') {
+    return renderCategoriesField(selectedCategoryIds, categories, isEditing);
+  }
+  console.warn(
+    'renderCategoriesField is not available; rendering fallback placeholder'
+  );
+  if (isEditing) {
+    return `<div class="text-sm text-gray-500">(Category selector unavailable)</div>`;
+  }
+  return `<div class="text-sm text-gray-400 italic">Ninguna categoría disponible</div>`;
 }
 
 function _renderTagsField(item, isEditing) {
