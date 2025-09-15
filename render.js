@@ -831,9 +831,24 @@ function _renderPlannerView() {
                                         }).join('')}
                                         </div>
                                     </div>
-                  <!-- Panel de Control Diario removed from planner to avoid duplication.
-                     The canonical control center is available in 'Mis Ajustes'. -->
-                  <div class="text-sm text-gray-500 italic">Panel de Control Diario disponible en 'Mis Ajustes'</div>
+                  <div data-test="daily-control-panel" class="space-y-2 text-sm">
+                    ${
+                      dayAnalysis.length > 0
+                        ? dayAnalysis
+                            .map(
+                              (nutrient) => `
+                  <div>
+                    <div class="flex justify-between font-medium"><span>${nutrient.name}</span><span>${nutrient.value}${nutrient.unit} ${nutrient.target ? `/ ${nutrient.target.toFixed(0)}${nutrient.unit}` : ''}</span></div>
+                    <div class="progress-bar mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div class="progress-bar-inner ${statusColors[nutrient.status]}" style="width: ${nutrient.percentage}%;"></div>
+                    </div>
+                  </div>
+                `
+                            )
+                            .join('')
+                        : '<p class="text-gray-400 italic">Sin datos para analizar</p>'
+                    }
+                  </div>
                                 </div>
                             </div>
                         </div>`;
