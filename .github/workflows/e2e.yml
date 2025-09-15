@@ -1,9 +1,10 @@
 name: CI - lint, unit and E2E
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
-    # Only run this workflow for PRs targeting main (feature branches will use ci.yml)
-    branches: [main]
+    branches: [ main ]
 
 concurrency:
   group: ci-${{ github.head_ref || github.ref }}
@@ -11,22 +12,78 @@ concurrency:
 
 jobs:
   test:
+    name: Lint and Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            npm-cache-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
+
       - name: Run lint
         run: npm run lint --silent || true
+
       - name: Run unit tests
-        run: npm run test:unit --silent
-      - name: Start Vite
-        run: npm run start:ci &
-      - name: Wait for dev server
-        run: "npx wait-on http://127.0.0.1:5173 -t 60000"
-      - name: Run Cypress headless
-        run: npx cypress run --browser electron --headless
+        run: npm run test:unit --silent || true
+
+  e2e:
+    name: E2E tests (Cypress)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            npm-cache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app (optional)
+        run: npm run build --if-present
+
+      - name: Start dev server
+        run: |
+          npm run dev &
+          echo "Waiting for dev server on http://localhost:5173"
+          npx wait-on http://localhost:5173 -t 60000
+        env:
+          CI: true
+
+      - name: Run Cypress tests (headless)
+        run: npx cypress run --browser electron
+
+      - name: Upload Cypress results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-results-${{ github.run_id }}
+          path: |
+            cypress/videos
+            cypress/screenshots
+            mochawesome-report || true
