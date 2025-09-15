@@ -87,8 +87,9 @@ jobs:
 
       - name: Start dev server
         run: |
-          npm run dev &
-          npx wait-on http://127.0.0.1:5173 -t 60000
+          # Start Vite bound to 127.0.0.1 so wait-on can detect it reliably in the runner
+          npx vite --port 5173 --host 127.0.0.1 &
+          npx wait-on http://127.0.0.1:5173 -t 120000
         env:
           CI: true
 
