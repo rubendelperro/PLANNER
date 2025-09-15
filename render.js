@@ -1331,20 +1331,20 @@ function _renderItemDetailView(itemId) {
   return `
         <div class="bg-white p-6 rounded-lg shadow-md">
             ${isEditing ? `<form id="item-detail-form" data-item-id="${itemId}">` : ''}
-                <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    ${
-                      isEditing
-                        ? `
-                        <input type="text" name="name" value="${item.name}" placeholder="Nombre del Item" required class="block w-1/2 text-2xl font-bold rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    `
-                        : `
-                        <h1 class="text-2xl font-bold text-gray-800">${item.name}</h1>
-                    `
-                    }
-                    <div>
-                        ${_renderItemActionButtons(isEditing, itemId)}
-                    </div>
-                </div>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-3">
+          ${
+            isEditing
+              ? `
+                <input type="text" name="name" value="${item.name}" placeholder="Nombre del Item" required class="block w-full md:w-1/2 text-2xl font-bold rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+              `
+              : `
+                <h1 class="text-2xl font-bold text-gray-800">${item.name}</h1>
+              `
+          }
+          <div>
+            ${_renderItemActionButtons(isEditing, itemId)}
+          </div>
+        </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-gray-50 p-6 rounded-lg">
