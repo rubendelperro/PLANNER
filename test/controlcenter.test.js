@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { renderControlCenter } from '../components/ControlCenter.js';
+import { describe, it, expect } from 'vitest';
 
 describe('ControlCenter component', () => {
   it('renders critical DOM selectors and data attributes', () => {

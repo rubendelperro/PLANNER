@@ -1,0 +1,28 @@
+# Commit & Push Instructions
+
+The environment where I ran commands doesn't have `git` available, so I couldn't run the commit for you. Follow these steps in PowerShell after installing Git to create the commit and push the branch.
+
+1) Ensure you're in the repo root:
+   Set-Location -Path "C:\Users\nomeg\Documents\RUBEN\PLANNER\1.0"
+
+2) Check current branch (should be `feat/refactor-reducers`):
+   git status
+   git branch --show-current
+
+3) Stage & commit (powerShell):
+   git add -A
+   git commit -m "refactor: extract ControlCenter, StoreManager, CategoryManager and move store/category field renderers to components (preserve DOM test hooks)"
+
+4) Push the branch and set upstream (first push):
+   git push -u origin feat/refactor-reducers
+
+If you need to install Git on Windows you can use one of the following:
+- Winget (Windows 10/11):
+  winget install --id Git.Git -e --source winget
+
+- Chocolatey:
+  choco install git -y
+
+- Or download installer from: https://git-scm.com/download/win
+
+If you want me to open a PR body for you to paste in GitHub, see the file `PR_BODY.md` in the repo root.

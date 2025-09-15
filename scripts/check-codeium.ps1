@@ -46,7 +46,7 @@ if (Test-Path $userSettingsPath) {
       if ($settings.PSObject.Properties.Name -contains $k) { Write-Ok "$k = $($settings.$k)" } else { Write-Warn "$k not set in user settings" }
     }
   } catch {
-    Write-Warn "Could not parse user settings at $userSettingsPath: $($_.Exception.Message)"
+    Write-Warn "Could not parse user settings at ${userSettingsPath}: $($_.Exception.Message)"
   }
 } else {
   Write-Warn "User settings.json not found at $userSettingsPath"
@@ -61,7 +61,7 @@ if (Test-Path $workspaceSettings) {
     Write-Host "\nWorkspace settings (.vscode/settings.json):"
     if ($wsettings.PSObject.Properties.Name -contains 'codeium.enabled') { Write-Ok "codeium.enabled = $($wsettings.'codeium.enabled')" } else { Write-Warn "codeium.enabled not present in workspace settings" }
   } catch {
-    Write-Warn "Could not parse workspace settings at $workspaceSettings: $($_.Exception.Message)"
+    Write-Warn "Could not parse workspace settings at ${workspaceSettings}: $($_.Exception.Message)"
   }
 } else {
   Write-Warn "No workspace .vscode/settings.json found in repo root (it's commonly gitignored)."
