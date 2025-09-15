@@ -905,7 +905,7 @@ function _renderItemLibrary() {
   return `
     <div class="bg-white p-6 rounded-lg shadow-md mb-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">Biblioteca de Items</h2>
+                <h2 class="text-2xl font-bold">Ingredientes</h2>
                 <button id="add-ingredient-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm">
                     + Añadir Ingrediente
                 </button>
@@ -1565,7 +1565,7 @@ export function render() {
                 <h1 class="text-4xl font-bold text-gray-800">Menu Planner</h1>
                 <nav class="flex items-center gap-4">
                     <button data-view="planner" class="px-4 py-2 text-sm font-medium rounded-md ${ui.activeView === 'planner' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Planificador</button>
-                    <button data-view="library" class="px-4 py-2 text-sm font-medium rounded-md ${ui.activeView === 'library' || ui.activeView === 'itemDetail' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Biblioteca</button>
+                    <button data-view="library" class="px-4 py-2 text-sm font-medium rounded-md ${ui.activeView === 'library' || ui.activeView === 'itemDetail' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Ingredientes</button>
                     <button data-view="recipes" class="px-4 py-2 text-sm font-medium rounded-md ${ui.activeView === 'recipes' || ui.activeView === 'recipeDetail' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Recetas</button>
                     <button data-view="settings" class="px-4 py-2 text-sm font-medium rounded-md ${ui.activeView === 'settings' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Mis Ajustes</button>
                 </nav>
