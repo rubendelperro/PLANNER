@@ -1,5 +1,5 @@
 export const Logger = {
-  PREFIX: '[Atom-Canvas]',
+  PREFIX: '[Menu Planner]',
   log(message) {
     console.log(`${this.PREFIX} INFO:`, message);
   },
@@ -101,9 +101,9 @@ export function getNutrientVectorForPlannedItem(
 
 export function loadState() {
   try {
-    const serializedState = localStorage.getItem('atomCanvasState_v20');
+    const serializedState = localStorage.getItem('menuPlannerState_v20');
     if (serializedState === null) {
-      const legacyState = localStorage.getItem('atomCanvasState');
+      const legacyState = localStorage.getItem('menuPlannerState');
       return legacyState ? JSON.parse(legacyState) : undefined;
     }
     return JSON.parse(serializedState);
@@ -116,7 +116,7 @@ export function loadState() {
 export function saveState(state) {
   try {
     const serializedState = JSON.stringify(state);
-    localStorage.setItem('atomCanvasState_v20', serializedState);
+    localStorage.setItem('menuPlannerState_v20', serializedState);
   } catch (err) {
     Logger.error('Failed to save state to localStorage', err);
   }

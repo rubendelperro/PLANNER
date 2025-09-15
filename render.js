@@ -1562,7 +1562,7 @@ export function render() {
   const newHtml = `
         <div class="mb-8">
             <div class="flex justify-between items-center border-b pb-4">
-                <h1 class="text-4xl font-bold text-gray-800">Atom-Canvas</h1>
+                <h1 class="text-4xl font-bold text-gray-800">Menu Planner</h1>
                 <nav class="flex items-center gap-4">
                     <button data-view="planner" class="px-4 py-2 text-sm font-medium rounded-md ${ui.activeView === 'planner' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Planificador</button>
                     <button data-view="library" class="px-4 py-2 text-sm font-medium rounded-md ${ui.activeView === 'library' || ui.activeView === 'itemDetail' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Biblioteca</button>

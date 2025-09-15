@@ -9,7 +9,7 @@ import { init } from './state.js';
     // Enable support for Map and Set structures within the state
     immer.enableMapSet();
   } else {
-    console.error('[Atom-Canvas] ERROR: Immer library not loaded.');
+    console.error('[Menu Planner] ERROR: Immer library not loaded.');
     return;
   }
 
