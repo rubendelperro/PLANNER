@@ -1,14 +1,13 @@
 
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
 
-# Run lint-staged in verbose mode so output is shown in the committing terminal
-# Use --no-install to ensure it uses installed version in node_modules
-npx --no-install lint-staged --verbose
+# Modern Husky pre-commit hook (avoid legacy sourcing that fails in Husky v10+)
+# Run lint-staged using the local dependency. Use --silent to reduce noise in CI.
+npx --no -- lint-staged --verbose
 
 if [ $? -eq 0 ]; then
-	echo "✔ pre-commit checks passed"
+  echo "✔ pre-commit checks passed"
 else
-	echo "✖ pre-commit checks failed"
-	exit 1
+  echo "✖ pre-commit checks failed"
+  exit 1
 fi
