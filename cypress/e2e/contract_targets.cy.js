@@ -56,16 +56,24 @@ describe('Contract: Targets panel and profile interactions', () => {
         stateSnapshot: win && win.__getState ? win.__getState() : null,
       };
       // Call the node task to write the file for offline inspection.
+      // If the task isn't registered in the Cypress runner (some CI configs),
+      // ignore the error and continue the test run.
       cy.task('writeFile', {
         filePath: 'cypress/results/contract_targets_window.json',
         contents: payload,
-      });
+      }).then(
+        () => {},
+        () => {}
+      );
       // Also write the current document HTML so we can see what Cypress sees
       cy.document().then((doc) => {
         cy.task('writeFile', {
           filePath: 'cypress/results/contract_targets_dom.html',
           contents: doc.documentElement.outerHTML,
-        });
+        }).then(
+          () => {},
+          () => {}
+        );
         // Persist any captured console logs from the browser
         cy.window().then((w) => {
           try {
@@ -73,7 +81,10 @@ describe('Contract: Targets panel and profile interactions', () => {
             cy.task('writeFile', {
               filePath: 'cypress/results/contract_targets_console.json',
               contents: logs,
-            });
+            }).then(
+              () => {},
+              () => {}
+            );
           } catch (e) {
             // ignore
           }
