@@ -8,10 +8,20 @@
  * @returns {Cypress.Chainable<boolean>}
  */
 Cypress.Commands.add('appReady', () => {
+  // Wait for the app readiness flag AND for the main nav to render.
+  // Some environments set __appReady before the initial nav/buttons are
+  // attached to the DOM; waiting for the settings nav button reduces
+  // flakiness in contract tests that then click navigation buttons.
   return cy
     .window({ timeout: 10000 })
     .its('__appReady', { timeout: 10000 })
-    .should('equal', true);
+    .should('equal', true)
+    .then(() => {
+      // Ensure the settings nav button (data-view="settings") exists in DOM
+      return cy
+        .get('button[data-view="settings"]', { timeout: 10000 })
+        .should('exist');
+    });
 });
 
 /**
