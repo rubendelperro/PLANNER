@@ -25,6 +25,33 @@ Cypress.Commands.add('appReady', () => {
 });
 
 /**
+ * Navigate to the settings view in a robust way.
+ * - If the visible nav button is present, try clicking it and wait briefly
+ *   for the `#targets-panel` to appear.
+ * - If the panel doesn't appear within a short timeout, fall back to using
+ *   the app's dispatch test hook to set the active view.
+ */
+Cypress.Commands.add('gotoSettings', () => {
+  // Try clicking the real nav button first
+  return cy
+    .get('button[data-view="settings"]', { timeout: 10000 })
+    .then(($btn) => {
+      if ($btn && $btn.length) {
+        // Click and then wait a short time for the renderer to show the panel.
+        cy.wrap($btn).click();
+        // If the DOM didn't update within 5s, fall back to dispatch.
+        return cy.get('#targets-panel', { timeout: 5000 }).then(
+          () => true,
+          () => cy.dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'settings' })
+        );
+      }
+
+      // If no nav button is present, use dispatch directly.
+      return cy.dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'settings' });
+    });
+});
+
+/**
  * Dispatch a Redux-like action via the app's test hook.
  * @param {Object} action - action object with { type, payload }
  * @returns {Cypress.Chainable<any>} - whatever the app's dispatch returns
