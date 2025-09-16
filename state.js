@@ -683,8 +683,10 @@ export function init() {
       ],
     },
     tags: {
-      byId: {},
-      allIds: [],
+      byId: {
+        'TAG-DEFAULT': { id: 'TAG-DEFAULT', name: 'Por defecto' },
+      },
+      allIds: ['TAG-DEFAULT'],
     },
     items: {
       byId: {
@@ -789,12 +791,17 @@ export function init() {
             sodium: 74,
             servingSizeGrams: 100,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-CARNES'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: {},
-            preferredStoreIds: [],
+            price: { value: 2.5, currency: 'EUR' },
+            preferredStoreIds: ['STORE-MERCADONA'],
+            purchaseInfo: {
+              packageValue: 100,
+              unit: 'gramos',
+              servingCount: 1,
+            },
           },
         },
         'MANZANA-FUJI': {
@@ -815,12 +822,17 @@ export function init() {
             sodium: 1,
             servingSizeGrams: 180,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-FRUTAS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: {},
-            preferredStoreIds: [],
+            price: { value: 0.8, currency: 'EUR' },
+            preferredStoreIds: ['STORE-LIDL'],
+            purchaseInfo: {
+              packageValue: 180,
+              unit: 'gramos',
+              servingCount: 1,
+            },
           },
         },
         'ESPINACAS-FRESCAS': {
@@ -841,11 +853,11 @@ export function init() {
             sodium: 79,
             servingSizeGrams: 85,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-VERDURAS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: { value: 1.5 },
+            price: { value: 1.5, currency: 'EUR' },
             preferredStoreIds: ['STORE-MERCADONA'],
             purchaseInfo: {
               packageValue: 250,
@@ -872,11 +884,11 @@ export function init() {
             sodium: 59,
             servingSizeGrams: 140,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-PESCADOS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: { value: 8.99 },
+            price: { value: 8.99, currency: 'EUR' },
             preferredStoreIds: ['STORE-MERCADONA'],
             purchaseInfo: {
               packageValue: 280,
@@ -903,12 +915,17 @@ export function init() {
             sodium: 6,
             servingSizeGrams: 200,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-VERDURAS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: {},
-            preferredStoreIds: [],
+            price: { value: 0.6, currency: 'EUR' },
+            preferredStoreIds: ['STORE-LIDL'],
+            purchaseInfo: {
+              packageValue: 200,
+              unit: 'gramos',
+              servingCount: 1,
+            },
           },
         },
         'GALLETAS-CHOCOLATE': {
@@ -929,11 +946,11 @@ export function init() {
             sodium: 170,
             servingSizeGrams: 20,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-DULCES'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: { value: 2.1 },
+            price: { value: 2.1, currency: 'EUR' },
             preferredStoreIds: ['STORE-SUPERMERCADO'],
             purchaseInfo: {
               packageValue: 200,
@@ -960,11 +977,11 @@ export function init() {
             sodium: 810,
             servingSizeGrams: 30,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-DULCES'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: { value: 1.85 },
+            price: { value: 1.85, currency: 'EUR' },
             preferredStoreIds: ['STORE-SUPERMERCADO'],
             purchaseInfo: {
               packageValue: 170,
@@ -991,11 +1008,11 @@ export function init() {
             sodium: 5,
             servingSizeGrams: 45,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-CEREALES'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: { value: 1.2 },
+            price: { value: 1.2, currency: 'EUR' },
             preferredStoreIds: ['STORE-SUPERMERCADO'],
             purchaseInfo: {
               packageValue: 1000,
@@ -1022,11 +1039,11 @@ export function init() {
             sodium: 392,
             servingSizeGrams: 52,
           },
-          tags: [],
+          tags: ['TAG-DEFAULT'],
           categoryIds: ['CAT-PESCADOS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
-            price: { value: 2.5 },
+            price: { value: 2.5, currency: 'EUR' },
             preferredStoreIds: ['STORE-SUPERMERCADO'],
             purchaseInfo: {
               packageValue: 156,

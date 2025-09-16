@@ -741,7 +741,31 @@ export function attachEventListeners(container) {
         if (!valueDisplay) return;
 
         if (state.profiles.byId[state.ui.activeProfileId]?.isDefault) {
-          return;
+          // UX: If the active profile is the default (read-only), offer to
+          // duplicate it into a new personal profile so the user can edit
+          // targets. This keeps the default profile immutable but provides a
+          // clear path to customize targets.
+          const confirmCreate = window.confirm(
+            'Estás viendo el perfil estándar, que no puede editarse.\n¿Quieres crear un perfil personal basado en el estándar para poder editar los objetivos?'
+          );
+          if (!confirmCreate) return;
+
+          // Build a shallow clone of the default profile with a new id
+          const defaultProfile = state.profiles.byId[state.ui.activeProfileId];
+          const newId = `PROF-${new Date().getTime()}`;
+          const newProfile = {
+            ...defaultProfile,
+            id: newId,
+            name: `${defaultProfile.name} (Personal)`,
+            isDefault: false,
+            // Ensure personalGoals object exists so edits will persist
+            personalGoals: { ...(defaultProfile.personalGoals || {}) },
+          };
+
+          // Dispatch actions to create and activate the new profile
+          dispatch({ type: 'CREATE_PROFILE', payload: newProfile });
+          // Update local state reference after dispatch
+          // Proceed with the rest of the handler so the input is created below
         }
 
         const nutrientId = targetElement.dataset.nutrientId;
@@ -761,10 +785,14 @@ export function attachEventListeners(container) {
           const valueStr = input.value;
           const newValue = valueStr === '' ? null : parseFloat(valueStr);
           if (newValue === null || !isNaN(newValue)) {
+            // Read freshest state to ensure we target the (possibly newly-created) active profile
+            const freshState = getState();
+            const targetProfileId =
+              freshState.ui.activeProfileId || state.ui.activeProfileId;
             dispatch({
               type: 'SET_PERSONAL_GOAL',
               payload: {
-                profileId: state.ui.activeProfileId,
+                profileId: targetProfileId,
                 nutrientId,
                 value: newValue,
               },

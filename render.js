@@ -432,12 +432,24 @@ function _renderEconomicMetrics(item, isEditing) {
   // Mostrar solo en modo visión (no en edición)
   if (isEditing) return '';
 
-  const price = item.logistics?.price?.value;
-  const packageGrams = item.logistics?.packageGrams;
-  const units = item.logistics?.unitsPerPackage;
+  // Price may be stored as number or string; coerce to number when possible
+  const rawPrice = item.logistics?.price?.value;
+  const price =
+    typeof rawPrice === 'number'
+      ? rawPrice
+      : rawPrice
+        ? parseFloat(rawPrice)
+        : undefined;
+
+  // Prefer explicit logistics fields, but fall back to purchaseInfo when present
+  const packageGrams =
+    item.logistics?.packageGrams ?? item.logistics?.purchaseInfo?.packageValue;
+  const units =
+    item.logistics?.unitsPerPackage ??
+    item.logistics?.purchaseInfo?.servingCount;
 
   // Necesitamos al menos precio y gramos por paquete para calcular €/kg
-  const hasPrice = typeof price === 'number' && !isNaN(price);
+  const hasPrice = typeof price === 'number' && !isNaN(price) && price > 0;
   const hasGrams =
     typeof packageGrams === 'number' &&
     !isNaN(packageGrams) &&
@@ -532,14 +544,14 @@ function _renderItemMetaPanel(
                                             <span class="text-sm text-gray-600">Precio</span>
                                             <span class="font-semibold">${item.logistics?.price?.value ? '€ ' + item.logistics.price.value : '—'}</span>
                                         </div>
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-sm text-gray-600">Peso</span>
-                                            <span class="font-semibold">${item.logistics?.packageGrams ? item.logistics.packageGrams + ' g' : '—'}</span>
-                                        </div>
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-sm text-gray-600">Unidades</span>
-                                            <span class="font-semibold">${item.logistics?.unitsPerPackage ?? '—'}</span>
-                                        </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-sm text-gray-600">Peso</span>
+                      <span class="font-semibold">${item.logistics?.purchaseInfo?.packageValue ? item.logistics.purchaseInfo.packageValue + ' ' + (item.logistics.purchaseInfo.unit || 'g') : item.logistics?.stock?.value ? item.logistics.stock.value + ' g' : '—'}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-sm text-gray-600">Unidades</span>
+                      <span class="font-semibold">${item.logistics?.purchaseInfo?.servingCount ?? item.logistics?.unitsPerPackage ?? '—'}</span>
+                    </div>
                                         ${_renderEconomicMetrics(item, isEditing)}
                                     </div>
                                 `
@@ -1347,8 +1359,7 @@ function _renderItemDetailView(itemId) {
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-gray-50 p-6 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Información Nutricional</h3>
-                        <h4 class="font-semibold text-gray-700 mb-3">Valores por 100g:</h4>
+                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Objetivos diarios</h3>
                         <div class="space-y-2">
                             ${trackedNutrients
                               .map((nutrientId) => {
