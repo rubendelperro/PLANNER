@@ -393,9 +393,24 @@ export function attachEventListeners(container) {
       const backToRecipesBtn = event.target.closest('#back-to-recipes-btn');
       if (backToRecipesBtn) {
         if (state.ui.recipeEditor?.isEditing) {
+          // Save edits and then show the saved recipe in view mode instead
+          // of navigating back to the recipes list. This preserves context
+          // for the user who wants to review the saved recipe.
           dispatch({ type: 'SAVE_RECIPE_EDITS' });
+          const recipeId =
+            state.ui.editingItemId ||
+            (document.getElementById('recipe-detail-form') &&
+              document.getElementById('recipe-detail-form').dataset.itemId);
+          if (recipeId) {
+            dispatch({ type: 'VIEW_RECIPE_DETAIL', payload: { recipeId } });
+          } else {
+            // Fallback to recipes list if we cannot determine the recipe id
+            dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'recipes' });
+          }
+        } else {
+          // If not in edit mode, preserve previous behavior
+          dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'recipes' });
         }
-        dispatch({ type: 'SET_ACTIVE_VIEW', payload: 'recipes' });
         return;
       }
 
@@ -501,9 +516,16 @@ export function attachEventListeners(container) {
         return;
       }
 
-      const editItemBtn = event.target.closest('#edit-item-btn');
+      const editItemBtn = event.target.closest('.edit-item-btn');
       if (editItemBtn) {
-        const itemId = state.ui.editingItemId;
+        // Determine the item id from the current editing context if available,
+        // otherwise try to extract it from the button id (which we render as edit-item-btn-<itemId>)
+        let itemId = state.ui.editingItemId;
+        if (!itemId) {
+          const parts =
+            editItemBtn.id && editItemBtn.id.split('edit-item-btn-');
+          if (parts && parts.length === 2) itemId = parts[1];
+        }
         if (state.ui.itemEditor?.isEditing) {
           dispatch({ type: 'CANCEL_EDITING_ITEM' });
         } else {

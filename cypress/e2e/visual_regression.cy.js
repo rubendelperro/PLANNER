@@ -237,8 +237,8 @@ describe('Visual regression: planner main view baseline', () => {
 
     // Iterate sections and capture snapshots
     sections.forEach((sec) => {
-      // Click the nav button to switch view when present
-      cy.get(`button[data-view="${sec.id}"]`).click();
+      // Click the first matching nav button to switch view when present
+      cy.get(`button[data-view="${sec.id}"]`).first().click();
       // Wait for view to render
       cy.wait(250);
 
@@ -270,7 +270,7 @@ describe('Visual regression: planner main view baseline', () => {
 
     // Now capture example detail pages: open first recipe and first item if present
     // 1) Recipes detail
-    cy.get('button[data-view="recipes"]').click();
+    cy.get('button[data-view="recipes"]').first().click();
     cy.wait(200);
     cy.get('[data-action="view-recipe"]')
       .first()
@@ -285,9 +285,17 @@ describe('Visual regression: planner main view baseline', () => {
               .first();
             takeSnapshots('detail: recipe', found.length ? found : null);
             // open recipe edit mode and snapshot the editor if an edit button exists
-            const editBtn = $b.find('#edit-recipe-btn');
+            const editBtn = $b.find('#edit-recipe-btn').first();
             if (editBtn && editBtn.length) {
-              cy.wrap(editBtn).click();
+              // prefer direct activation to avoid accidental overlays
+              cy.wrap(editBtn)
+                .scrollIntoView()
+                .then(($eb) => {
+                  // dispatch native click to bypass Cypress actionability when necessary
+                  $eb[0].dispatchEvent(
+                    new MouseEvent('click', { bubbles: true })
+                  );
+                });
               cy.wait(250);
               cy.get('body').then(($bb) => {
                 const editor = $bb.find('#recipe-form, .recipe-editor').first();
@@ -299,7 +307,7 @@ describe('Visual regression: planner main view baseline', () => {
       });
 
     // 2) Item detail from library
-    cy.get('button[data-view="library"]').click();
+    cy.get('button[data-view="library"]').first().click();
     cy.wait(200);
     cy.get('[data-action="view-item"]')
       .first()
@@ -313,9 +321,26 @@ describe('Visual regression: planner main view baseline', () => {
               .first();
             takeSnapshots('detail: item', found.length ? found : null);
             // open item edit mode and snapshot the editor if an edit button exists
-            const editItemBtn = $b.find('#edit-item-btn');
-            if (editItemBtn && editItemBtn.length) {
-              cy.wrap(editItemBtn).click();
+            const editItemBtns = $b.find('.edit-item-btn');
+            if (editItemBtns && editItemBtns.length) {
+              const visibleBtn = Array.from(editItemBtns).find((el) => {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
+              });
+              if (visibleBtn) {
+                // First try a normal click; if Cypress deems it covered, retry with force
+                cy.wrap(visibleBtn)
+                  .scrollIntoView()
+                  .then(($vb) => {
+                    return cy
+                      .wrap($vb)
+                      .click()
+                      .then(
+                        () => {},
+                        () => cy.wrap($vb).click({ force: true })
+                      );
+                  });
+              }
               cy.wait(250);
               cy.get('body').then(($bb) => {
                 const itemEditor = $bb
@@ -337,7 +362,7 @@ describe('Visual regression: planner main view baseline', () => {
     cy.visit('/');
 
     // Navigate to settings view
-    cy.get('button[data-view="settings"]').click();
+    cy.get('button[data-view="settings"]').first().click();
     cy.wait(250);
 
     // Ensure the nutrient manager container exists and is visible

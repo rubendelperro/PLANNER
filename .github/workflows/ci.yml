@@ -2,9 +2,9 @@ name: CI - lint, unit and E2E
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.head_ref || github.ref }}

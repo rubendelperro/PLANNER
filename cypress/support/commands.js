@@ -37,8 +37,8 @@ Cypress.Commands.add('gotoSettings', () => {
     .get('button[data-view="settings"]', { timeout: 10000 })
     .then(($btn) => {
       if ($btn && $btn.length) {
-        // Click and then wait a short time for the renderer to show the panel.
-        cy.wrap($btn).click();
+        // Click the first matching button to avoid ambiguous multiple-element subjects
+        cy.wrap($btn).first().click();
         // If the DOM didn't update within 5s, fall back to dispatch.
         return cy.get('#targets-panel', { timeout: 5000 }).then(
           () => true,
