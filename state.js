@@ -684,9 +684,21 @@ export function init() {
     },
     tags: {
       byId: {
-        'TAG-DEFAULT': { id: 'TAG-DEFAULT', name: 'Por defecto' },
+        'TAG-PROTEICO': { id: 'TAG-PROTEICO', name: 'Proteico' },
+        'TAG-FRUTA': { id: 'TAG-FRUTA', name: 'Fruta' },
+        'TAG-VERDURA': { id: 'TAG-VERDURA', name: 'Verdura' },
+        'TAG-SNACK': { id: 'TAG-SNACK', name: 'Snack' },
+        'TAG-CEREAL': { id: 'TAG-CEREAL', name: 'Cereal' },
+        'TAG-LACTEO': { id: 'TAG-LACTEO', name: 'Lácteo' },
       },
-      allIds: ['TAG-DEFAULT'],
+      allIds: [
+        'TAG-PROTEICO',
+        'TAG-FRUTA',
+        'TAG-VERDURA',
+        'TAG-SNACK',
+        'TAG-CEREAL',
+        'TAG-LACTEO',
+      ],
     },
     items: {
       byId: {
@@ -791,7 +803,7 @@ export function init() {
             sodium: 74,
             servingSizeGrams: 100,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-PROTEICO'],
           categoryIds: ['CAT-CARNES'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
@@ -822,7 +834,7 @@ export function init() {
             sodium: 1,
             servingSizeGrams: 180,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-FRUTA'],
           categoryIds: ['CAT-FRUTAS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
@@ -853,7 +865,7 @@ export function init() {
             sodium: 79,
             servingSizeGrams: 85,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-VERDURA'],
           categoryIds: ['CAT-VERDURAS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
@@ -884,7 +896,7 @@ export function init() {
             sodium: 59,
             servingSizeGrams: 140,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-PROTEICO'],
           categoryIds: ['CAT-PESCADOS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
@@ -915,7 +927,7 @@ export function init() {
             sodium: 6,
             servingSizeGrams: 200,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-VERDURA'],
           categoryIds: ['CAT-VERDURAS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
@@ -946,7 +958,7 @@ export function init() {
             sodium: 170,
             servingSizeGrams: 20,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-SNACK'],
           categoryIds: ['CAT-DULCES'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
@@ -977,7 +989,7 @@ export function init() {
             sodium: 810,
             servingSizeGrams: 30,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-SNACK'],
           categoryIds: ['CAT-DULCES'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
@@ -1008,7 +1020,7 @@ export function init() {
             sodium: 5,
             servingSizeGrams: 45,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-CEREAL'],
           categoryIds: ['CAT-CEREALES'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
@@ -1039,7 +1051,7 @@ export function init() {
             sodium: 392,
             servingSizeGrams: 52,
           },
-          tags: ['TAG-DEFAULT'],
+          tags: ['TAG-PROTEICO'],
           categoryIds: ['CAT-PESCADOS'],
           logistics: {
             stock: { value: 0, unit: 'gramos' },
