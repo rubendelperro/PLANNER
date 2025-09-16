@@ -1453,6 +1453,66 @@ function _renderItemDetailView(itemId) {
 
                     ${_renderItemMetaPanel(item, isEditing, selectedCategoryIds, selectedStoreIds, stores, categories)}
                 </div>
+
+                <!-- Bloque agregado: listado completo de nutrientes desde la base de datos -->
+                <div class="mt-6 bg-white p-6 rounded-lg border">
+                    <h4 class="font-semibold text-gray-700 mb-3">100g contienen</h4>
+                    <div class="space-y-2 text-sm">
+                        ${items.allIds
+                          .filter(
+                            (id) => items.byId[id].itemType === 'definicion'
+                          )
+                          .map((nutrientId) => {
+                            const def = items.byId[nutrientId];
+                            if (!def) return '';
+
+                            let value100g = 0;
+                            if (
+                              item.itemType === 'ingrediente' &&
+                              item.nutrients &&
+                              item.nutrients[nutrientId] != null
+                            ) {
+                              value100g = item.nutrients[nutrientId];
+                            } else if (
+                              item.itemType === 'receta' &&
+                              item.computed &&
+                              item.computed.totals &&
+                              item.computed.totalGrams > 0 &&
+                              item.computed.totals[nutrientId] != null
+                            ) {
+                              const scalingFactor =
+                                100 / item.computed.totalGrams;
+                              value100g =
+                                item.computed.totals[nutrientId] *
+                                scalingFactor;
+                            }
+
+                            const displayValue = parseFloat(
+                              (value100g || 0).toFixed(1)
+                            );
+
+                            return `
+                                <div class="space-y-2">
+                                    <div class="flex justify-between font-medium">
+                                        <span class="text-gray-700">${def.name}</span>
+                                        ${
+                                          isEditing &&
+                                          item.itemType === 'ingrediente'
+                                            ? `
+                                        <input type="number" name="nutrient_${nutrientId}" value="${displayValue}" step="0.1" class="w-24 text-right rounded border-gray-300 text-sm">
+                                    `
+                                            : `
+                                        <span class="font-bold text-gray-900">${displayValue}${def.unit || ''}</span>
+                                    `
+                                        }
+                                    </div>
+                                </div>
+                            `;
+                          })
+                          .join('')}
+                    </div>
+                </div>
+                </div>
             ${isEditing ? `</form>` : ''}
         </div>
     `;
