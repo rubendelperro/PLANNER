@@ -510,6 +510,14 @@ export function attachEventListeners(container) {
               }
             }
 
+            // Persist servingSizeGrams if provided in the form (use FormData to be safe)
+            const servingSizeVal = formData.get('servingSizeGrams');
+            if (servingSizeVal !== null && servingSizeVal !== '') {
+              updates.nutrients = updates.nutrients || {};
+              updates.nutrients.servingSizeGrams =
+                parseInt(servingSizeVal, 10) || 0;
+            }
+
             // Dispatch update, then ensure we exit edit mode and open the item's detail in view mode
             dispatch({
               type: 'UPDATE_ITEM_DETAIL',

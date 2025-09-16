@@ -552,6 +552,10 @@ function _renderItemMetaPanel(
                                             <div class="text-sm text-gray-500 mb-1">Paquete</div>
                                             ${_renderPackageField(item, isEditing)}
                                         </div>
+                      <div>
+                        <div class="text-sm text-gray-500 mb-1">Peso por ración (g)</div>
+                        <input type="number" name="servingSizeGrams" step="1" min="0" value="${item.nutrients?.servingSizeGrams ?? ''}" placeholder="ej: 45" class="block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                      </div>
                                         ${_renderEconomicMetrics(item, isEditing)}
                                     </div>
                                 `
@@ -1418,44 +1422,119 @@ function _renderItemDetailView(itemId) {
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-gray-50 p-6 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Objetivos diarios</h3>
+                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Valores Nutricionales</h3>
                         <div class="space-y-2">
+                            <div class="mb-4">
+                              <div class="flex items-center gap-2">
+                                <button id="per-100g-btn" class="px-3 py-1 text-sm rounded-md bg-white text-gray-900 shadow">100g</button>
+                              </div>
+                            </div>
                             ${trackedNutrients
                               .map((nutrientId) => {
                                 const definition = items.byId[nutrientId];
                                 if (!definition) return '';
 
-                                let value100g = 0;
-                                if (
-                                  item.itemType === 'ingrediente' &&
-                                  item.nutrients[nutrientId]
-                                ) {
-                                  value100g = item.nutrients[nutrientId];
-                                } else if (
-                                  item.itemType === 'receta' &&
-                                  item.computed?.totals[nutrientId] &&
-                                  item.computed?.totalGrams > 0
-                                ) {
-                                  const scalingFactor =
-                                    100 / item.computed.totalGrams;
-                                  // computed.totals stores values already divided by PRECISION_FACTOR (see selectors.js)
-                                  value100g =
-                                    item.computed.totals[nutrientId] *
-                                    scalingFactor;
+                                // Determine per-100g / per-serving / per-package / per-unit
+                                let per100g = 0;
+                                let perServing = '';
+                                let perPackage = '';
+                                let perUnit = '';
+
+                                if (item.itemType === 'ingrediente') {
+                                  // For ingredients, read stored DB values (assumed per 100g)
+                                  per100g = item.nutrients?.[nutrientId] ?? 0;
+                                  // If servingSizeGrams exists, compute per-serving
+                                  const servingGrams =
+                                    item.nutrients?.servingSizeGrams ||
+                                    item.nutrients?.servingSize ||
+                                    item.nutrients?.servingSizeGrams === 0
+                                      ? item.nutrients?.servingSizeGrams
+                                      : item.nutrients?.servingSize;
+                                  if (
+                                    servingGrams &&
+                                    typeof servingGrams === 'number' &&
+                                    servingGrams > 0
+                                  ) {
+                                    perServing = parseFloat(
+                                      ((per100g * servingGrams) / 100).toFixed(
+                                        2
+                                      )
+                                    );
+                                  }
+                                  const packageGrams =
+                                    item.logistics?.packageGrams ??
+                                    item.logistics?.purchaseInfo?.packageValue;
+                                  const units =
+                                    item.logistics?.unitsPerPackage ??
+                                    item.logistics?.purchaseInfo?.servingCount;
+                                  if (packageGrams)
+                                    perPackage = parseFloat(
+                                      ((per100g * packageGrams) / 100).toFixed(
+                                        2
+                                      )
+                                    );
+                                  if (units && packageGrams) {
+                                    const gramsPerUnit = packageGrams / units;
+                                    perUnit = parseFloat(
+                                      ((per100g * gramsPerUnit) / 100).toFixed(
+                                        2
+                                      )
+                                    );
+                                  }
+                                } else if (item.itemType === 'receta') {
+                                  // For recipes, use canonical selector to compute totals
+                                  const { computedTotals, totalGrams } =
+                                    selectors.calculateRecipeTotals(
+                                      item,
+                                      items.byId
+                                    );
+                                  const rawTotal =
+                                    computedTotals?.[nutrientId] ?? 0;
+                                  const totalValue =
+                                    rawTotal / PRECISION_FACTOR;
+                                  if (totalGrams && totalGrams > 0) {
+                                    per100g = parseFloat(
+                                      ((totalValue * 100) / totalGrams).toFixed(
+                                        2
+                                      )
+                                    );
+                                  } else {
+                                    per100g = 0;
+                                  }
+                                  // per-serving
+                                  const racionesToShow = getRacionesToShow(
+                                    item,
+                                    ui
+                                  );
+                                  if (racionesToShow && racionesToShow > 0) {
+                                    perServing = parseFloat(
+                                      (totalValue / racionesToShow).toFixed(2)
+                                    );
+                                  }
+                                  const recipePackageGrams =
+                                    item.logistics?.packageGrams ??
+                                    item.logistics?.purchaseInfo?.packageValue;
+                                  const recipeUnits =
+                                    item.logistics?.unitsPerPackage ??
+                                    item.logistics?.purchaseInfo?.servingCount;
+                                  if (recipePackageGrams)
+                                    perPackage = parseFloat(
+                                      (
+                                        (per100g * recipePackageGrams) /
+                                        100
+                                      ).toFixed(2)
+                                    );
+                                  if (recipeUnits && recipePackageGrams) {
+                                    const gramsPerUnit =
+                                      recipePackageGrams / recipeUnits;
+                                    perUnit = parseFloat(
+                                      ((per100g * gramsPerUnit) / 100).toFixed(
+                                        2
+                                      )
+                                    );
+                                  }
                                 }
 
-                                const coreMacros = [
-                                  'calories',
-                                  'proteins',
-                                  'fats',
-                                  'carbs',
-                                ];
-                                // Show all tracked nutrients (including zeros) so the
-                                // ingredient card mirrors the nutrient manager and planner.
-                                // Previously we hid non-macro nutrients with zero value,
-                                // which caused the mismatch the user reported.
-
-                                // Aplicar formato unificado igual que panel diario/recetas
                                 const activeTargets =
                                   selectors.getActiveNutritionalTargets();
                                 const targetInfo = activeTargets[nutrientId];
@@ -1463,39 +1542,25 @@ function _renderItemDetailView(itemId) {
                                   ? targetInfo.finalValue
                                   : null;
 
-                                // Cálculo de status (igual que panel diario)
-                                const percentage =
-                                  targetValue && targetValue > 0
-                                    ? Math.min(
-                                        100,
-                                        Math.round(
-                                          (value100g / targetValue) * 100
-                                        )
-                                      )
-                                    : 0;
-                                let status = 'info';
-                                if (targetValue != null) {
-                                  if (value100g > targetValue * 1.1)
-                                    status = 'danger';
-                                  else if (percentage >= 90) status = 'success';
-                                  else status = 'warning';
-                                }
+                                const targetDisplay =
+                                  targetValue != null
+                                    ? ` / ${parseFloat(targetValue).toFixed(0)}${definition.unit || ''}`
+                                    : '';
 
-                                const statusColors = {
-                                  success: 'bg-green-500',
-                                  warning: 'bg-yellow-500',
-                                  danger: 'bg-red-500',
-                                  info: 'bg-blue-500',
-                                };
-                                const targetDisplay = targetValue
-                                  ? ` / ${targetValue.toFixed(0)}${definition.unit}`
-                                  : '';
+                                // Default visible text is per100g (as requested)
+                                const visibleText = `${isNaN(per100g) ? '—' : parseFloat(per100g).toFixed(0)}${definition.unit || ''}${targetDisplay}`;
 
                                 return `
                 <div class="space-y-2">
                   <div class="flex justify-between font-medium">
                     <span class="text-gray-700">${definition.name}</span>
-          <span class="font-bold text-gray-900">${value100g.toFixed(0)}${definition.unit || ''}</span>
+                    <span class="font-bold text-gray-900 nutrient-value"
+                          data-per100g="${per100g}"
+                          data-perserving="${perServing}"
+                          data-perpackage="${perPackage}"
+                          data-perunit="${perUnit}"
+                          data-unit="${definition.unit || ''}"
+                          data-target="${targetValue || ''}">${visibleText}</span>
                   </div>
                 </div>
                 `;
