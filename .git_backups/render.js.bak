@@ -12,171 +12,6 @@ import { renderNutrientManager } from './components/NutrientManager.js';
 import { renderControlCenter } from './components/ControlCenter.js';
 import { renderStoreManager } from './components/StoreManager.js';
 import { renderCategoryManager } from './components/CategoryManager.js';
-import { renderCategoriesField } from './components/CategoryManager.js';
-import { renderStoresField } from './components/StoreManager.js';
-
-// Dependency Injection container for the state accessor
-let getState = () => ({});
-
-export function initializeRenderer(getStateFn) {
-  getState = getStateFn;
-}
-
-// --- Módulo: Centro de Mando + Panel de Objetivos ---
-function _renderControlCenter(state) {
-  // Delegate rendering to the extracted component to keep render.js thin.
-  return renderControlCenter(state);
-}
-
-// Nutrient manager extracted to components/NutrientManager.js
-
-const renderFunctions = {
-  renderSettingsView(state) {
-    // Mostrar Centro de Mando, Gestor de Nutrientes y Gestor de Supermercados en 'Mis Ajustes'
-    // Cada módulo se envuelve en su propia columna para mantenerlos visualmente separados.
-    return `
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="col-span-1">${_renderControlCenter(state)}</div>
-            <div class="col-span-1">${renderNutrientManager(state)}</div>
-            <div class="col-span-1">${_renderStoreManager(state)}</div>
-        </div>
-        <div class="mt-6">
-            ${_renderCategoryManager(state)}
-        </div>
-    `;
-  },
-};
-
-// --- Render Helper Functions ---
-
-function _renderNexusHeader(ui) {
-  const { nexusView, activePlannerDay } = ui;
-  let title;
-
-  if (nexusView === 'week') {
-    const weekDates = getWeekDates(new Date(activePlannerDay || new Date()));
-    const startOfWeek = weekDates[0];
-    const endOfWeek = weekDates[6];
-    const formatMonth = (date) =>
-      date.toLocaleDateString('es-ES', { month: 'short' });
-    title = `Semana del ${startOfWeek.getDate()} ${formatMonth(startOfWeek)} al ${endOfWeek.getDate()} ${formatMonth(endOfWeek)}, ${endOfWeek.getFullYear()}`;
-  } else {
-    // month
-    title = new Date(activePlannerDay || new Date()).toLocaleDateString(
-      'es-ES',
-      { month: 'long', year: 'numeric' }
-    );
-  }
-
-  return `
-        <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-            <div class="flex items-center gap-4">
-                <h2 class="text-2xl font-bold">Calendario Analítico Nexus</h2>
-                <div class="flex items-center bg-gray-100 rounded-md p-1">
-                    <button id="view-week-btn" class="px-3 py-1 text-sm rounded-md ${nexusView === 'week' ? 'bg-white shadow' : ''}">Semana</button>
-                    <button id="view-month-btn" class="px-3 py-1 text-sm rounded-md ${nexusView === 'month' ? 'bg-white shadow' : ''}">Mes</button>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <button id="go-to-today-btn" class="px-3 py-1 text-sm rounded-md bg-gray-200 hover:bg-gray-300">Hoy</button>
-                <button id="clear-selection-btn" class="px-3 py-1 text-sm rounded-md bg-red-200 text-red-800 hover:bg-red-300">Limpiar</button>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 mb-4">
-            <button id="prev-${nexusView}-btn" class="px-2 py-1 bg-gray-200 rounded-md hover:bg-gray-300">&lt;</button>
-            <span class="text-lg font-semibold text-gray-700 capitalize">${title}</span>
-            <button id="next-${nexusView}-btn" class="px-2 py-1 bg-gray-200 rounded-md hover:bg-gray-300">&gt;</button>
-        </div>`;
-}
-
-function _renderNexusMonthCell(
-  date,
-  currentMonth,
-  planner,
-  isSelected,
-  selectionId,
-  consumablesMap
-) {
-  const isGhostDay = date.getMonth() !== currentMonth;
-  const dayPlan = planner[date.toISOString().split('T')[0]];
-  const mealItems = dayPlan?.[selectionId.split('/')[1]] || [];
-
-  const cellClasses = `p-1 border-r border-b border-gray-200 text-xs ${isGhostDay ? 'is-ghost-day' : ''}`;
-  const buttonClasses = `relative w-full h-full text-left p-1 nexus-cell ${isSelected ? 'is-selected' : ''}`;
-
-  return `
-        <div class="${cellClasses}">
-            <button class="${buttonClasses}" data-selection-type="cell" data-selection-id="${selectionId}">
-                <span class="absolute top-1 right-1 font-semibold">${date.getDate()}</span>
-                <div class="mt-4 text-xs overflow-hidden text-ellipsis whitespace-nowrap">
-                    ${mealItems.map((item) => consumablesMap.get(item.id)?.name || '?').join(', ')}
-                </div>
-            </button>
-        </div>
-    `;
-}
-
-function _renderNexusWeekGrid(ui, planner, consumablesMap) {
-  const { activePlannerDay, selectedCells } = ui;
-  const weekDates = getWeekDates(new Date(activePlannerDay || new Date()));
-
-  const allIdsInContext = weekDates.flatMap((date) =>
-    SLOTS.map((slot) => `${date.toISOString().split('T')[0]}/${slot}`)
-  );
-  const allSelected =
-    allIdsInContext.length > 0 &&
-    allIdsInContext.every((id) => selectedCells.has(id));
-  const partialSelected =
-    !allSelected && allIdsInContext.some((id) => selectedCells.has(id));
-  let toggleAllClass = '';
-  if (allSelected) toggleAllClass = 'is-fully-selected';
-  else if (partialSelected) toggleAllClass = 'is-partially-selected';
-
-  return `
-        <div class="grid grid-cols-8 border-t border-l border-gray-200">
-            <div class="font-bold text-center p-2 border-r border-b border-gray-200 bg-gray-50">
-                <button class="w-full h-full nexus-cell nexus-toggle-all ${toggleAllClass}" data-selection-type="all" title="Seleccionar/Deseleccionar todo">&#10003;</button>
-            </div>
-            ${weekDates
-              .map((date) => {
-                const dateStr = date.toISOString().split('T')[0];
-                const allDayCellsSelected = SLOTS.every((slot) =>
-                  selectedCells.has(`${dateStr}/${slot}`)
-                );
-                return `<div class="font-bold text-center p-2 border-r border-b border-gray-200 bg-gray-50">
-                    <button class="w-full h-full nexus-cell ${allDayCellsSelected ? 'is-fully-selected' : ''}" data-selection-type="day" data-selection-id="${dateStr}">
-                        ${date.toLocaleDateString('es-ES', { weekday: 'short' })} ${date.getDate()}
-                    </button>
-                </div>`;
-              })
-              .join('')}
-
-            ${SLOTS.map((slot) => {
-              const allSlotCellsSelected = weekDates.every((date) =>
-                selectedCells.has(`${date.toISOString().split('T')[0]}/${slot}`)
-              );
-              return `
-                    <div class="font-bold text-left p-2 border-r border-b border-gray-200 bg-gray-50">
-                        <button class="w-full h-full text-left nexus-cell ${allSlotCellsSelected ? 'is-fully-selected' : ''}" data-selection-type="slotRow" data-selection-id="${slot}">
-                            ${SLOT_NAMES[slot]}
-                        </button>
-                    </div>
-                    ${weekDates
-                      .map((date) => {
-                        const dateString = date.toISOString().split('T')[0];
-                        const dayPlan = planner[dateString];
-                        const mealItems = dayPlan?.[slot] || [];
-                        const selectionId = `${dateString}/${slot}`;
-                        return `<div class="p-2 border-r border-b border-gray-200 text-xs">
-                            <button class="w-full h-full text-left nexus-cell ${selectedCells.has(selectionId) ? 'is-selected' : ''}" data-selection-type="cell" data-selection-id="${selectionId}">
-                                ${mealItems.map((item) => consumablesMap.get(item.id)?.name || '?').join(', ') || '<span class="italic text-gray-400">Vacío</span>'}
-                            </button>
-                        </div>`;
-                      })
-                      .join('')}`;
-            }).join('')}
-        </div>`;
-}
 
 function _renderNexusMonthGrid(ui, planner, consumablesMap) {
   const { activePlannerDay, selectedCells } = ui;
@@ -464,6 +299,42 @@ function _renderEconomicMetrics(item, isEditing) {
     hasPrice && hasGrams ? (price * 1000) / packageGrams : null;
   const eurosPerUnit = hasPrice && hasUnits ? price / units : null;
   const gramsPerUnit = hasGrams && hasUnits ? packageGrams / units : null;
+
+  // €/100g (simple derived metric)
+  const eurosPer100g =
+    hasPrice && hasGrams ? (price * 100) / packageGrams : null;
+
+  // Nutrición relevante para métricas combinadas
+  const energyPer100g =
+    item.nutrients?.calories ??
+    item.nutrients?.energy ??
+    item.logistics?.purchaseInfo?.energyPer100g;
+  const proteinPer100g =
+    item.nutrients?.proteins ??
+    item.nutrients?.protein ??
+    item.logistics?.purchaseInfo?.proteinPer100g;
+
+  // €/kcal and price per 100 kcal
+  let eurosPerKcal = null;
+  let pricePer100kcal = null;
+  if (
+    eurosPer100g != null &&
+    typeof energyPer100g === 'number' &&
+    energyPer100g > 0
+  ) {
+    eurosPerKcal = eurosPer100g / energyPer100g; // € per kcal
+    pricePer100kcal = eurosPerKcal * 100;
+  }
+
+  // Cost per gram of protein (€/g protein)
+  let costPerGramProtein = null;
+  if (
+    eurosPer100g != null &&
+    typeof proteinPer100g === 'number' &&
+    proteinPer100g > 0
+  ) {
+    costPerGramProtein = eurosPer100g / proteinPer100g;
+  }
 
   // Calcular precio por ración si se conoce servingSizeGrams
   const servingSizeGrams =
@@ -1175,39 +1046,36 @@ function _renderRecipeDetailView(recipeId) {
                                 perServingValue.toFixed(2)
                               ); // NUEVO: Display por ración
 
-                              // Calcular valores por paquete/unidad si hay logística
+                              // Additional derived displays: per package and per unit
                               const packageGrams =
-                                nutrient.logistics?.packageGrams ??
-                                nutrient.logistics?.purchaseInfo?.packageValue;
-                              const units =
-                                nutrient.logistics?.unitsPerPackage ??
-                                nutrient.logistics?.purchaseInfo?.servingCount;
-                              // Note: recipe-level logistics may exist on `recipe.logistics`
-                              const recipePackageGrams =
-                                recipe.logistics?.packageGrams ??
-                                recipe.logistics?.purchaseInfo?.packageValue;
-                              const recipeUnits =
-                                recipe.logistics?.unitsPerPackage ??
-                                recipe.logistics?.purchaseInfo?.servingCount;
-                              let perPackageDisplay = '';
-                              let perUnitDisplay = '';
-                              if (recipePackageGrams && totalGrams > 0) {
-                                perPackageDisplay = parseFloat(
-                                  (
-                                    per100gValue *
-                                    (recipePackageGrams / 100)
-                                  ).toFixed(2)
-                                );
-                              }
-                              if (recipeUnits && recipePackageGrams) {
-                                const gramsPerUnit =
-                                  recipePackageGrams / recipeUnits;
-                                perUnitDisplay = parseFloat(
-                                  (per100gValue * (gramsPerUnit / 100)).toFixed(
-                                    2
-                                  )
-                                );
-                              }
+                                item.logistics?.packageGrams ??
+                                item.logistics?.purchaseInfo?.packageValue;
+                              const unitsPerPackage =
+                                item.logistics?.unitsPerPackage ??
+                                item.logistics?.purchaseInfo?.servingCount;
+                              const gramsPerUnit =
+                                packageGrams && unitsPerPackage
+                                  ? packageGrams / unitsPerPackage
+                                  : null;
+
+                              const perPackageDisplay =
+                                packageGrams && per100gDisplay != null
+                                  ? parseFloat(
+                                      (
+                                        (per100gDisplay * packageGrams) /
+                                        100
+                                      ).toFixed(2)
+                                    )
+                                  : null;
+                              const perUnitDisplay =
+                                gramsPerUnit && per100gDisplay != null
+                                  ? parseFloat(
+                                      (
+                                        (per100gDisplay * gramsPerUnit) /
+                                        100
+                                      ).toFixed(2)
+                                    )
+                                  : null;
 
                               // Obtener objetivo nutricional
                               const activeTargets =
@@ -1270,17 +1138,17 @@ function _renderRecipeDetailView(recipeId) {
                                 <div class="space-y-2">
                                     <div class="flex justify-between font-medium">
                                         <span class="text-gray-700">${nutrient.name}</span>
-                                        <span class="nutrient-value"
-                                              data-per100g="${per100gDisplay}"
-                                              data-perserving="${perServingDisplay}"
-                                              data-perpackage="${perPackageDisplay || ''}"
-                                              data-perunit="${perUnitDisplay || ''}"
-                                              data-unit="${nutrient.unit}"
-                                              data-target="${targetValue || ''}"
-                                              data-percentage100g="${percentage100g}"
-                                              data-percentageperserving="${percentagePerServing}"
-                                              data-status100g="${status100g}"
-                                              data-statusperserving="${statusPerServing}">${perServingDisplay.toFixed(0)}${nutrient.unit}${targetDisplay}</span>
+                <span class="nutrient-value"
+                  data-per100g="${per100gDisplay}"
+                  data-perserving="${perServingDisplay}"
+                  data-perpackage="${perPackageDisplay != null ? perPackageDisplay : ''}"
+                  data-perunit="${perUnitDisplay != null ? perUnitDisplay : ''}"
+                  data-unit="${nutrient.unit}"
+                  data-target="${targetValue || ''}"
+                  data-percentage100g="${percentage100g}"
+                  data-percentageperserving="${percentagePerServing}"
+                  data-status100g="${status100g}"
+                  data-statusperserving="${statusPerServing}">${perServingDisplay.toFixed(0)}${nutrient.unit}${targetDisplay}</span>
                                     </div>
                                     ${
                                       targetValue != null
@@ -1418,7 +1286,7 @@ function _renderItemDetailView(itemId) {
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-gray-50 p-6 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Objetivos diarios</h3>
+                        <h3 class="text-lg font-semibold mb-4 text-gray-800">100g contienen</h3>
                         <div class="space-y-2">
                             ${trackedNutrients
                               .map((nutrientId) => {
@@ -1428,77 +1296,37 @@ function _renderItemDetailView(itemId) {
                                 let value100g = 0;
                                 if (
                                   item.itemType === 'ingrediente' &&
-                                  item.nutrients[nutrientId]
+                                  item.nutrients &&
+                                  item.nutrients[nutrientId] != null
                                 ) {
                                   value100g = item.nutrients[nutrientId];
                                 } else if (
                                   item.itemType === 'receta' &&
-                                  item.computed?.totals[nutrientId] &&
-                                  item.computed?.totalGrams > 0
+                                  item.computed &&
+                                  item.computed.totals &&
+                                  item.computed.totalGrams > 0 &&
+                                  item.computed.totals[nutrientId] != null
                                 ) {
                                   const scalingFactor =
                                     100 / item.computed.totalGrams;
-                                  // computed.totals stores values already divided by PRECISION_FACTOR (see selectors.js)
                                   value100g =
                                     item.computed.totals[nutrientId] *
                                     scalingFactor;
                                 }
 
-                                const coreMacros = [
-                                  'calories',
-                                  'proteins',
-                                  'fats',
-                                  'carbs',
-                                ];
-                                // Show all tracked nutrients (including zeros) so the
-                                // ingredient card mirrors the nutrient manager and planner.
-                                // Previously we hid non-macro nutrients with zero value,
-                                // which caused the mismatch the user reported.
-
-                                // Aplicar formato unificado igual que panel diario/recetas
-                                const activeTargets =
-                                  selectors.getActiveNutritionalTargets();
-                                const targetInfo = activeTargets[nutrientId];
-                                const targetValue = targetInfo
-                                  ? targetInfo.finalValue
-                                  : null;
-
-                                // Cálculo de status (igual que panel diario)
-                                const percentage =
-                                  targetValue && targetValue > 0
-                                    ? Math.min(
-                                        100,
-                                        Math.round(
-                                          (value100g / targetValue) * 100
-                                        )
-                                      )
-                                    : 0;
-                                let status = 'info';
-                                if (targetValue != null) {
-                                  if (value100g > targetValue * 1.1)
-                                    status = 'danger';
-                                  else if (percentage >= 90) status = 'success';
-                                  else status = 'warning';
-                                }
-
-                                const statusColors = {
-                                  success: 'bg-green-500',
-                                  warning: 'bg-yellow-500',
-                                  danger: 'bg-red-500',
-                                  info: 'bg-blue-500',
-                                };
-                                const targetDisplay = targetValue
-                                  ? ` / ${targetValue.toFixed(0)}${definition.unit}`
-                                  : '';
+                                // Show absolute per-100g values only (no targets/progress)
+                                const displayValue = parseFloat(
+                                  (value100g || 0).toFixed(1)
+                                );
 
                                 return `
-                <div class="space-y-2">
-                  <div class="flex justify-between font-medium">
-                    <span class="text-gray-700">${definition.name}</span>
-          <span class="font-bold text-gray-900">${value100g.toFixed(0)}${definition.unit || ''}</span>
-                  </div>
-                </div>
-                `;
+                                <div class="space-y-2">
+                                    <div class="flex justify-between font-medium">
+                                        <span class="text-gray-700">${definition.name}</span>
+                                        <span class="font-bold text-gray-900">${displayValue}${definition.unit || ''}</span>
+                                    </div>
+                                </div>
+                                `;
                               })
                               .join('')}
                         </div>
@@ -1507,75 +1335,44 @@ function _renderItemDetailView(itemId) {
                     ${_renderItemMetaPanel(item, isEditing, selectedCategoryIds, selectedStoreIds, stores, categories)}
                 </div>
 
-                <!-- Mostrar TODOS los nutrientes (definiciones) para permitir configuración posterior -->
+                <!-- Bloque agregado: listado completo de nutrientes desde la base de datos -->
                 <div class="mt-6 bg-white p-6 rounded-lg border">
                     <h4 class="font-semibold text-gray-700 mb-3">100g contienen</h4>
                     <div class="space-y-2 text-sm">
-                        ${
-                          // Iterate all nutrient definition items (itemType === 'definicion')
-                          items.allIds
-                            .filter(
-                              (id) => items.byId[id].itemType === 'definicion'
-                            )
-                            .map((nutrientId) => {
-                              const def = items.byId[nutrientId];
-                              if (!def) return '';
+                        ${items.allIds
+                          .filter(
+                            (id) => items.byId[id].itemType === 'definicion'
+                          )
+                          .map((nutrientId) => {
+                            const def = items.byId[nutrientId];
+                            if (!def) return '';
 
-                              let value100g = 0;
-                              if (
-                                item.itemType === 'ingrediente' &&
-                                item.nutrients &&
-                                item.nutrients[nutrientId] != null
-                              ) {
-                                value100g = item.nutrients[nutrientId];
-                              } else if (item.itemType === 'receta') {
-                                const {
-                                  computedTotals,
-                                  totalGrams: computedGrams,
-                                } = selectors.calculateRecipeTotals(
-                                  item,
-                                  items.byId
-                                );
-                                if (
-                                  computedTotals &&
-                                  computedTotals[nutrientId] != null &&
-                                  computedGrams > 0
-                                ) {
-                                  const scalingFactor = 100 / computedGrams;
-                                  value100g =
-                                    computedTotals[nutrientId] * scalingFactor;
-                                }
-                              }
+                            let value100g = 0;
+                            if (
+                              item.itemType === 'ingrediente' &&
+                              item.nutrients &&
+                              item.nutrients[nutrientId] != null
+                            ) {
+                              value100g = item.nutrients[nutrientId];
+                            } else if (
+                              item.itemType === 'receta' &&
+                              item.computed &&
+                              item.computed.totals &&
+                              item.computed.totalGrams > 0 &&
+                              item.computed.totals[nutrientId] != null
+                            ) {
+                              const scalingFactor =
+                                100 / item.computed.totalGrams;
+                              value100g =
+                                item.computed.totals[nutrientId] *
+                                scalingFactor;
+                            }
 
-                              const displayValue = parseFloat(
-                                (value100g || 0).toFixed(1)
-                              );
+                            const displayValue = parseFloat(
+                              (value100g || 0).toFixed(1)
+                            );
 
-                              const packageGrams =
-                                item.logistics?.packageGrams ??
-                                item.logistics?.purchaseInfo?.packageValue;
-                              const units =
-                                item.logistics?.unitsPerPackage ??
-                                item.logistics?.purchaseInfo?.servingCount;
-                              let perPackage = '';
-                              let perUnit = '';
-                              if (packageGrams && packageGrams > 0) {
-                                perPackage = parseFloat(
-                                  (displayValue * (packageGrams / 100)).toFixed(
-                                    2
-                                  )
-                                );
-                              }
-                              if (units && packageGrams) {
-                                const gramsPerUnit = packageGrams / units;
-                                perUnit = parseFloat(
-                                  (displayValue * (gramsPerUnit / 100)).toFixed(
-                                    2
-                                  )
-                                );
-                              }
-
-                              return `
+                            return `
                                 <div class="space-y-2">
                                     <div class="flex justify-between font-medium">
                                         <span class="text-gray-700">${def.name}</span>
@@ -1586,15 +1383,14 @@ function _renderItemDetailView(itemId) {
                                         <input type="number" name="nutrient_${nutrientId}" value="${displayValue}" step="0.1" class="w-24 text-right rounded border-gray-300 text-sm">
                                     `
                                             : `
-                                        <span class="font-bold text-gray-900 nutrient-value" data-per100g="${displayValue}" data-perserving="" data-perpackage="${perPackage || ''}" data-perunit="${perUnit || ''}" data-unit="${def.unit || ''}">${displayValue}${def.unit || ''}</span>
+                                        <span class="font-bold text-gray-900">${displayValue}${def.unit || ''}</span>
                                     `
                                         }
                                     </div>
                                 </div>
                             `;
-                            })
-                            .join('')
-                        }
+                          })
+                          .join('')}
                     </div>
                 </div>
                 </div>

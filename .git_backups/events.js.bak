@@ -324,12 +324,13 @@ export function attachEventListeners(container) {
         const perUnitButton = container.querySelector('#per-unit-btn');
         const nutrientValues = container.querySelectorAll('.nutrient-value');
 
-        // Small helper to set button classes
-        const baseInactive =
-          'flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900';
-        const baseActive =
-          'flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow';
+        // Helper to reset classes and set active
         const setActive = (active) => {
+          const baseInactive =
+            'flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900';
+          const baseActive =
+            'flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow';
+
           per100gButton.className =
             active === 'per100g' ? baseActive : baseInactive;
           perServingButton.className =
@@ -352,6 +353,7 @@ export function attachEventListeners(container) {
           const targetRaw = valueElement.dataset.target;
           const target = targetRaw ? parseFloat(targetRaw) : null;
 
+          // Determine the raw value to display from dataset
           const valueMap = {
             per100g: valueElement.dataset.per100g,
             perserving: valueElement.dataset.perserving,
@@ -364,14 +366,17 @@ export function attachEventListeners(container) {
             rawValue !== undefined && rawValue !== ''
               ? parseFloat(rawValue)
               : NaN;
+
           const displayValue = !isNaN(numericValue)
             ? numericValue
             : rawValue || '—';
 
           const targetDisplay =
             target != null ? ` / ${parseFloat(target).toFixed(0)}${unit}` : '';
+
           valueElement.textContent = `${displayValue}${unit}${targetDisplay}`;
 
+          // Recompute percentage and status dynamically when target is present
           const containerNode = valueElement.closest('.space-y-2');
           const progressBar = containerNode
             ? containerNode.querySelector('.progress-bar-inner')
@@ -382,6 +387,7 @@ export function attachEventListeners(container) {
               100,
               Math.round((numericValue / target) * 100)
             );
+
             let status = 'info';
             if (numericValue > target * 1.1) status = 'danger';
             else if (percentage >= 90) status = 'success';
@@ -393,6 +399,7 @@ export function attachEventListeners(container) {
               danger: 'bg-red-500',
               info: 'bg-blue-500',
             };
+
             progressBar.className = `progress-bar-inner h-full ${statusColors[status]} transition-all duration-300`;
             progressBar.style.width = `${percentage}%`;
           }
