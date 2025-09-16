@@ -1437,16 +1437,7 @@ function _renderItemDetailView(itemId) {
                                 <div class="space-y-2">
                                     <div class="flex justify-between font-medium">
                                         <span class="text-gray-700">${definition.name}</span>
-                                        ${
-                                          isEditing &&
-                                          item.itemType === 'ingrediente'
-                                            ? `
-                                        <input type="number" name="nutrient_${nutrientId}" value="${value100g.toFixed(1)}" step="0.1" class="w-20 text-right rounded border-gray-300 text-sm">
-                                    `
-                                            : `
-                                        <span class="font-bold text-gray-900">${value100g.toFixed(0)}${definition.unit}${targetDisplay}</span>
-                                    `
-                                        }
+                    <span class="font-bold text-gray-900">${value100g.toFixed(0)}${definition.unit}${targetDisplay}</span>
                                     </div>
                                     ${
                                       targetValue
