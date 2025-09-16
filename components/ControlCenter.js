@@ -25,7 +25,7 @@ export function renderControlCenter(state) {
   return `
     <div class="bg-white p-6 rounded-lg shadow-md">
   <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Centro de Mando</h2>
+  <h2 class="text-2xl font-bold">Perfil</h2>
         <div class="flex items-center gap-2">
           <select id="profile-selector" class="rounded-md border-gray-300 shadow-sm text-sm">
             ${profiles.allIds
@@ -42,7 +42,7 @@ export function renderControlCenter(state) {
     <button id="confirm-profile-change" class="hidden w-full bg-blue-500 text-white py-2 rounded-md mb-4">Cambiar Perfil</button>
     ${renderProfileForm(state)}
                 <div id="targets-panel" class="mt-4 max-h-60 overflow-y-auto">
-                    <h3 class="font-semibold mb-2">Panel de Objetivos</h3>
+                    <h3 class="font-semibold mb-2">Objetivos nutricionales diarios</h3>
                     ${(() => {
                       // Use the selector as the single source of truth for final target values
                       const activeTargets = activeTargetsMap || {};
