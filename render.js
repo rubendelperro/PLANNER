@@ -465,6 +465,19 @@ function _renderEconomicMetrics(item, isEditing) {
   const eurosPerUnit = hasPrice && hasUnits ? price / units : null;
   const gramsPerUnit = hasGrams && hasUnits ? packageGrams / units : null;
 
+  // Calcular precio por ración si se conoce servingSizeGrams
+  const servingSizeGrams =
+    item.nutrients?.servingSizeGrams ??
+    item.logistics?.purchaseInfo?.servingSizeGrams;
+  let pricePerServing = null;
+  if (hasPrice && servingSizeGrams && hasGrams) {
+    // price * (servingSizeGrams / packageGrams)
+    pricePerServing = (price * servingSizeGrams) / packageGrams;
+  } else if (hasPrice && hasUnits && units) {
+    // fallback: price por unidad
+    pricePerServing = price / units;
+  }
+
   const fmt = (v, digits = 2) =>
     v == null ? '—' : parseFloat(v).toFixed(digits);
 
@@ -483,6 +496,10 @@ function _renderEconomicMetrics(item, isEditing) {
                     <span class="text-sm text-gray-600">g / unidad</span>
                     <span class="text-xl font-semibold text-gray-700">${gramsPerUnit != null ? fmt(gramsPerUnit, 0) + ' g' : '—'}</span>
                 </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Precio por ración</span>
+          <span class="text-xl font-semibold text-indigo-600">${pricePerServing != null ? '€ ' + fmt(pricePerServing, 2) : '—'}</span>
+        </div>
             </div>
         </div>\n    `;
 }
@@ -545,13 +562,17 @@ function _renderItemMetaPanel(
                                             <span class="font-semibold">${item.logistics?.price?.value ? '€ ' + item.logistics.price.value : '—'}</span>
                                         </div>
                     <div class="flex justify-between items-center">
-                      <span class="text-sm text-gray-600">Peso</span>
-                      <span class="font-semibold">${item.logistics?.purchaseInfo?.packageValue ? item.logistics.purchaseInfo.packageValue + ' ' + (item.logistics.purchaseInfo.unit || 'g') : item.logistics?.stock?.value ? item.logistics.stock.value + ' g' : '—'}</span>
+                                      <span class="text-sm text-gray-600">Peso</span>
+                                      <span class="font-semibold">${item.logistics?.purchaseInfo?.packageValue ? item.logistics.purchaseInfo.packageValue + ' ' + (item.logistics.purchaseInfo.unit || 'g') : item.logistics?.stock?.value ? item.logistics.stock.value + ' g' : '—'}</span>
                     </div>
                     <div class="flex justify-between items-center">
                       <span class="text-sm text-gray-600">Unidades</span>
                       <span class="font-semibold">${item.logistics?.purchaseInfo?.servingCount ?? item.logistics?.unitsPerPackage ?? '—'}</span>
                     </div>
+                                    <div class="flex justify-between items-center">
+                                      <span class="text-sm text-gray-600">Peso por ración</span>
+                                      <span class="font-semibold">${item.nutrients?.servingSizeGrams ? item.nutrients.servingSizeGrams + ' g' : '—'}</span>
+                                    </div>
                                         ${_renderEconomicMetrics(item, isEditing)}
                                     </div>
                                 `
