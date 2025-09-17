@@ -21,3 +21,6 @@ node_modules/
 .eslintcache
 /.nyc_output/
 
+# Local git backups created by some editors/tools
+.git_backups/
+
