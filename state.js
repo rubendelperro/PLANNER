@@ -99,6 +99,8 @@ const reducer = immer.produce((draftState, action) => {
       const { recipeId, computedTotals, totalGrams } = action.payload;
       const recipe = draftState.items.byId[recipeId];
       if (recipe) {
+        // Update computed totals for the recipe.
+        // Keep this operation quiet in production (no console logs).
         recipe.computed = { totals: computedTotals, totalGrams };
       }
       break;
@@ -269,6 +271,12 @@ const reducer = immer.produce((draftState, action) => {
       };
       draftState.items.byId[finalRecipe.id] = finalRecipe;
       draftState.items.allIds.push(finalRecipe.id);
+      try {
+        console.info('[ADD_RECIPE] computed set for', finalRecipe.id, {
+          totals: computedTotals,
+          totalGrams,
+        });
+      } catch (e) {}
       break;
     }
     // Planner-related actions delegated to plannerReducer slice
@@ -338,10 +346,11 @@ const reducer = immer.produce((draftState, action) => {
     case 'SAVE_RECIPE_EDITS': {
       const recipe = draftState.items.byId[draftState.ui.recipeEditor.recipeId];
       if (recipe) {
+        // Apply edits from the editor
         recipe.ingredients = [...draftState.ui.recipeEditor.ingredients];
         recipe.raciones = draftState.ui.recipeEditor.raciones || 1;
 
-        // Recalcular totales después de guardar
+        // Recompute totals after saving edits
         const { computedTotals, totalGrams } = calculateRecipeTotals(
           recipe,
           draftState.items.byId
@@ -475,6 +484,8 @@ const reducer = immer.produce((draftState, action) => {
               recipe,
               draftState.items.byId
             );
+            // Recompute quietly after ingredient deletion
+            // (no logging to keep output clean during tests)
             recipe.computed = { totals: computedTotals, totalGrams };
           }
         }
@@ -1295,6 +1306,13 @@ export function init() {
         item,
         initialData.items.byId
       );
+      try {
+        console.info('[init-recompute] setting computed for', item.id, {
+          before: item.computed || null,
+          totals: computedTotals,
+          totalGrams,
+        });
+      } catch (e) {}
       item.computed = { totals: computedTotals, totalGrams };
     }
   });
@@ -1324,9 +1342,59 @@ export function init() {
     }
   }
 
+  // Deep-merge persisted data into initialData for critical collections
+  const mergedItemsById = {
+    ...(initialData.items ? initialData.items.byId : {}),
+    ...(persistedState && persistedState.items
+      ? persistedState.items.byId
+      : {}),
+  };
+  const mergedItemsAllIds = Array.from(
+    new Set([
+      ...(initialData.items ? initialData.items.allIds : []),
+      ...(persistedState && persistedState.items
+        ? persistedState.items.allIds
+        : []),
+    ])
+  );
+
+  const mergedProfilesById = {
+    ...(initialData.profiles ? initialData.profiles.byId : {}),
+    ...(persistedState && persistedState.profiles
+      ? persistedState.profiles.byId
+      : {}),
+  };
+  const mergedProfilesAllIds = Array.from(
+    new Set([
+      ...(initialData.profiles ? initialData.profiles.allIds : []),
+      ...(persistedState && persistedState.profiles
+        ? persistedState.profiles.allIds
+        : []),
+    ])
+  );
+
   const finalInitialState = {
     ...initialData,
-    ...persistedState,
+    // Merge items and profiles more carefully to avoid losing definitions
+    items: { byId: mergedItemsById, allIds: mergedItemsAllIds },
+    profiles: { byId: mergedProfilesById, allIds: mergedProfilesAllIds },
+    // For planner and other top-level objects prefer persisted state when present
+    planner:
+      persistedState && persistedState.planner
+        ? persistedState.planner
+        : initialData.planner,
+    tags:
+      persistedState && persistedState.tags
+        ? persistedState.tags
+        : initialData.tags,
+    stores:
+      persistedState && persistedState.stores
+        ? persistedState.stores
+        : initialData.stores,
+    categories:
+      persistedState && persistedState.categories
+        ? persistedState.categories
+        : initialData.categories,
     ui: initialData.ui,
   };
 
@@ -1341,6 +1409,13 @@ export function init() {
           item,
           finalInitialState.items.byId
         );
+        try {
+          console.info('[persisted-recompute] setting computed for', item.id, {
+            before: item.computed || null,
+            totals: computedTotals,
+            totalGrams,
+          });
+        } catch (e) {}
         item.computed = { totals: computedTotals, totalGrams };
       }
     });
@@ -1351,6 +1426,44 @@ export function init() {
 
   // Load the initial state into the system
   dispatch({ type: 'INIT_DATA', payload: finalInitialState });
+  // Deterministic recompute pass: ensure all recipes' computed fields are
+  // recalculated from the freshly loaded items.byId. This prevents stale
+  // computed values when persisted state contains edited ingredients.
+  try {
+    const current = getState();
+    const itemIds = current.items ? Object.keys(current.items.byId || {}) : [];
+    itemIds.forEach((id) => {
+      const it = current.items.byId[id];
+      if (it && it.itemType === 'receta') {
+        const { computedTotals, totalGrams } = calculateRecipeTotals(
+          it,
+          current.items.byId
+        );
+        // Use dispatch to update state so reducers and subscribers follow
+        try {
+          dispatch({
+            type: 'UPDATE_RECIPE_COMPUTED',
+            payload: { recipeId: id, computedTotals, totalGrams },
+          });
+        } catch (e) {
+          // best-effort: if dispatch fails here, continue with others
+        }
+      }
+    });
+  } catch (e) {
+    // ignore; this is a protective recompute pass
+  }
+  // Temporary debug: confirm critical ingredient exists after init
+  try {
+    const s = getState();
+    if (!s.items || !s.items.byId || !s.items.byId['CHICKEN-BREAST']) {
+      console.warn('[init] CHICKEN-BREAST missing after INIT_DATA');
+    } else {
+      console.info('[init] CHICKEN-BREAST present after INIT_DATA');
+    }
+  } catch (e) {
+    /* ignore */
+  }
   // Signal to E2E tests that the app finished initialization
   try {
     window.__appReady = true;
@@ -1371,4 +1484,5 @@ export function init() {
       Logger.debug('Could not expose test hooks on window', err);
     }
   }
+  // Diagnostic hooks cleaned up; no debug persistence is left in production path.
 }

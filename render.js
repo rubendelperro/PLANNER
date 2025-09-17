@@ -278,18 +278,18 @@ function _renderItemActionButtons(isEditing, itemId) {
   const baseClass = 'px-4 py-2 rounded-md text-sm w-[160px]';
 
   return `
-        <div class="flex gap-2">
-      <button type="button" id="edit-item-btn-${itemId || 'global'}" class="edit-item-btn ${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
-        ${isEditing ? 'Cancelar Edición' : 'Editar Item'}
-            </button>
-            <button type="button" id="back-to-library-btn" class="bg-green-600 hover:bg-green-700 text-white ${baseClass}">
-                ${isEditing ? 'Guardar y Volver' : 'Volver a Biblioteca'}
-            </button>
-            <button type="button" id="delete-current-item-btn" data-item-id="${itemId}" class="bg-red-600 hover:bg-red-700 text-white ${baseClass}">
-                Eliminar
-            </button>
-        </div>
-    `;
+    <div class="flex gap-2">
+    <button type="button" id="edit-item-btn-${itemId || 'global'}" class="edit-item-btn ${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
+  ${isEditing ? 'Cancelar' : 'Editar'}
+      </button>
+      <button type="button" id="back-to-library-btn" class="bg-green-600 hover:bg-green-700 text-white ${baseClass}">
+        ${isEditing ? 'Guardar' : 'Volver'}
+      </button>
+      <button type="button" id="delete-current-item-btn" data-item-id="${itemId}" class="bg-red-600 hover:bg-red-700 text-white ${baseClass}">
+        Eliminar
+      </button>
+    </div>
+  `;
 }
 
 function _renderRecipeActionButtons(isEditing, recipeId) {
@@ -298,10 +298,10 @@ function _renderRecipeActionButtons(isEditing, recipeId) {
   return `
         <div class="flex gap-2">
             <button type="button" id="edit-recipe-btn" class="${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
-                ${isEditing ? 'Cancelar Edición' : 'Editar Ingredientes'}
+                ${isEditing ? 'Cancelar' : 'Editar Ingredientes'}
             </button>
             <button type="button" id="back-to-recipes-btn" class="bg-green-600 hover:bg-green-700 text-white ${baseClass}">
-                ${isEditing ? 'Guardar y Volver' : 'Volver a Recetas'}
+                ${isEditing ? 'Guardar' : 'Volver a Recetas'}
             </button>
             <button type="button" id="delete-current-recipe-btn" data-recipe-id="${recipeId}" class="bg-red-600 hover:bg-red-700 text-white ${baseClass}">
                 Eliminar
@@ -1422,16 +1422,15 @@ function _renderItemDetailView(itemId) {
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-gray-50 p-6 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Valores Nutricionales</h3>
-                        <div class="space-y-2">
-                            <div class="mb-4">
-                              <div class="flex items-center gap-2">
-                                <div class="flex bg-gray-200 rounded-lg p-1">
-                                  <button id="per-serving-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Ración</button>
-                                  <button id="per-100g-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow">100g</button>
-                                </div>
-                              </div>
-                            </div>
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Valores Nutricionales</h3>
+                <div class="flex bg-gray-200 rounded-lg p-1">
+                  <button id="per-package-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Paquete</button>
+                  <button id="per-serving-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Ración</button>
+                  <button id="per-100g-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow">100g</button>
+                </div>
+              </div>
+                            <div class="space-y-2">
                             ${trackedNutrients
                               .map((nutrientId) => {
                                 const definition = items.byId[nutrientId];
