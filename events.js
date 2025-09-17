@@ -706,10 +706,44 @@ export function attachEventListeners(container) {
         return;
       }
 
-      // Add ingredient button (Recipe Detail View)
+      // Add ingredient button (used in two places: library header and recipe composer)
       const addIngredientBtn = event.target.closest('#add-ingredient-btn');
       if (addIngredientBtn) {
-        actions.addIngredientToRecipe();
+        // If the button is inside the recipe composer form, delegate to the
+        // existing recipe-adding flow.
+        const recipeForm =
+          addIngredientBtn.closest('#recipe-form') ||
+          addIngredientBtn.closest('[data-recipe-id]');
+        if (recipeForm) {
+          actions.addIngredientToRecipe();
+          return;
+        }
+
+        // Otherwise this is the library-level "+ Añadir Ingrediente" button.
+        // Create a new blank ingredient and open it in edit mode.
+        try {
+          const id = `ING-NEW-${Date.now()}`;
+          const newItem = {
+            id,
+            name: '',
+            type: 'alimento',
+            itemType: 'ingrediente',
+            nutrients: {},
+            tags: [],
+            categoryIds: [],
+            logistics: {
+              stock: { value: 0, unit: 'gramos' },
+              price: {},
+            },
+          };
+
+          dispatch({ type: 'ADD_ITEM', payload: newItem });
+          // Switch to item detail view and start editing the new item
+          dispatch({ type: 'START_EDITING_ITEM', payload: { itemId: id } });
+        } catch (e) {
+          // swallow errors to avoid breaking the UI
+        }
+
         return;
       }
 
