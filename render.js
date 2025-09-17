@@ -278,18 +278,18 @@ function _renderItemActionButtons(isEditing, itemId) {
   const baseClass = 'px-4 py-2 rounded-md text-sm w-[160px]';
 
   return `
-        <div class="flex gap-2">
-      <button type="button" id="edit-item-btn-${itemId || 'global'}" class="edit-item-btn ${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
-  ${isEditing ? 'Cancelar' : 'Editar Item'}
-            </button>
-            <button type="button" id="back-to-library-btn" class="bg-green-600 hover:bg-green-700 text-white ${baseClass}">
-                ${isEditing ? 'Guardar' : 'Volver a Biblioteca'}
-            </button>
-            <button type="button" id="delete-current-item-btn" data-item-id="${itemId}" class="bg-red-600 hover:bg-red-700 text-white ${baseClass}">
-                Eliminar
-            </button>
-        </div>
-    `;
+    <div class="flex gap-2">
+    <button type="button" id="edit-item-btn-${itemId || 'global'}" class="edit-item-btn ${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
+  ${isEditing ? 'Cancelar' : 'Editar'}
+      </button>
+      <button type="button" id="back-to-library-btn" class="bg-green-600 hover:bg-green-700 text-white ${baseClass}">
+        ${isEditing ? 'Guardar' : 'Volver'}
+      </button>
+      <button type="button" id="delete-current-item-btn" data-item-id="${itemId}" class="bg-red-600 hover:bg-red-700 text-white ${baseClass}">
+        Eliminar
+      </button>
+    </div>
+  `;
 }
 
 function _renderRecipeActionButtons(isEditing, recipeId) {
