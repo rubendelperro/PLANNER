@@ -1426,7 +1426,10 @@ function _renderItemDetailView(itemId) {
                         <div class="space-y-2">
                             <div class="mb-4">
                               <div class="flex items-center gap-2">
-                                <button id="per-100g-btn" class="px-3 py-1 text-sm rounded-md bg-white text-gray-900 shadow">100g</button>
+                                <div class="flex bg-gray-200 rounded-lg p-1">
+                                  <button id="per-serving-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Ración</button>
+                                  <button id="per-100g-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow">100g</button>
+                                </div>
                               </div>
                             </div>
                             ${trackedNutrients
@@ -1443,16 +1446,33 @@ function _renderItemDetailView(itemId) {
                                 if (item.itemType === 'ingrediente') {
                                   // For ingredients, read stored DB values (assumed per 100g)
                                   per100g = item.nutrients?.[nutrientId] ?? 0;
-                                  // If servingSizeGrams exists, compute per-serving
-                                  const servingGrams =
-                                    item.nutrients?.servingSizeGrams ||
-                                    item.nutrients?.servingSize ||
-                                    item.nutrients?.servingSizeGrams === 0
-                                      ? item.nutrients?.servingSizeGrams
-                                      : item.nutrients?.servingSize;
+                                  // If servingSizeGrams exists, compute per-serving.
+                                  // Use an explicit check to avoid incorrect behavior
+                                  // caused by complex operator precedence.
+                                  let servingGrams = null;
                                   if (
-                                    servingGrams &&
+                                    item.nutrients &&
+                                    typeof item.nutrients.servingSizeGrams !==
+                                      'undefined' &&
+                                    item.nutrients.servingSizeGrams !== null
+                                  ) {
+                                    servingGrams = Number(
+                                      item.nutrients.servingSizeGrams
+                                    );
+                                  } else if (
+                                    item.nutrients &&
+                                    typeof item.nutrients.servingSize !==
+                                      'undefined' &&
+                                    item.nutrients.servingSize !== null
+                                  ) {
+                                    servingGrams = Number(
+                                      item.nutrients.servingSize
+                                    );
+                                  }
+
+                                  if (
                                     typeof servingGrams === 'number' &&
+                                    !isNaN(servingGrams) &&
                                     servingGrams > 0
                                   ) {
                                     perServing = parseFloat(
@@ -1535,17 +1555,21 @@ function _renderItemDetailView(itemId) {
                                   }
                                 }
 
-                                const activeTargets =
-                                  selectors.getActiveNutritionalTargets();
-                                const targetInfo = activeTargets[nutrientId];
-                                const targetValue = targetInfo
-                                  ? targetInfo.finalValue
-                                  : null;
-
-                                const targetDisplay =
-                                  targetValue != null
-                                    ? ` / ${parseFloat(targetValue).toFixed(0)}${definition.unit || ''}`
-                                    : '';
+                                // Only show targets for recipes. Ingredients should display only per-100g values.
+                                let targetValue = null;
+                                let targetDisplay = '';
+                                if (item.itemType === 'receta') {
+                                  const activeTargets =
+                                    selectors.getActiveNutritionalTargets();
+                                  const targetInfo = activeTargets[nutrientId];
+                                  targetValue = targetInfo
+                                    ? targetInfo.finalValue
+                                    : null;
+                                  targetDisplay =
+                                    targetValue != null
+                                      ? ` / ${parseFloat(targetValue).toFixed(0)}${definition.unit || ''}`
+                                      : '';
+                                }
 
                                 // Default visible text is per100g (as requested)
                                 const visibleText = `${isNaN(per100g) ? '—' : parseFloat(per100g).toFixed(0)}${definition.unit || ''}${targetDisplay}`;
@@ -1554,13 +1578,13 @@ function _renderItemDetailView(itemId) {
                 <div class="space-y-2">
                   <div class="flex justify-between font-medium">
                     <span class="text-gray-700">${definition.name}</span>
-                    <span class="font-bold text-gray-900 nutrient-value"
-                          data-per100g="${per100g}"
-                          data-perserving="${perServing}"
-                          data-perpackage="${perPackage}"
-                          data-perunit="${perUnit}"
-                          data-unit="${definition.unit || ''}"
-                          data-target="${targetValue || ''}">${visibleText}</span>
+        <span class="font-bold text-gray-900 nutrient-value"
+          data-per100g="${per100g}"
+          data-perserving="${perServing}"
+          data-perpackage="${perPackage}"
+          data-perunit="${perUnit}"
+          data-unit="${definition.unit || ''}"
+                          data-target="${item.itemType === 'receta' ? targetValue || '' : ''}">${visibleText}</span>
                   </div>
                 </div>
                 `;
@@ -1808,4 +1832,34 @@ export function render() {
 
   // Re-attach event listeners after rendering
   attachEventListeners(appContainer);
+
+  // Re-apply previously selected nutrient display mode so it survives re-renders.
+  // The event handler writes the selected mode to the app root dataset (see events.js).
+  try {
+    const appRoot = appContainer.closest('#app') || appContainer;
+    const savedMode =
+      appRoot && appRoot.dataset && appRoot.dataset.nutrientMode;
+    if (savedMode) {
+      const modeToButtonId = {
+        per100g: '#per-100g-btn',
+        perserving: '#per-serving-btn',
+        perpackage: '#per-package-btn',
+        perunit: '#per-unit-btn',
+      };
+      const btnSelector = modeToButtonId[savedMode];
+      if (btnSelector) {
+        const btn = appContainer.querySelector(btnSelector);
+        if (btn && typeof btn.click === 'function') {
+          // Programmatically trigger the click so the same toggle logic runs.
+          btn.click();
+        }
+      }
+    }
+  } catch (e) {
+    // Don't let persistence attempts break rendering
+    // Logging only if console available
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('Could not reapply nutrient display mode:', e);
+    }
+  }
 }

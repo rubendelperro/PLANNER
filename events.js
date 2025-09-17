@@ -4,8 +4,9 @@ import {
   validateServings,
   getMonthDates,
   getWeekDates,
+  getRacionesToShow,
 } from './utils.js';
-import { findDependentRecipes } from './selectors.js';
+import { findDependentRecipes, calculateRecipeTotals } from './selectors.js';
 import {
   handleProfileConfirmClick,
   handleNewProfileClick,
@@ -322,7 +323,24 @@ export function attachEventListeners(container) {
         const perServingButton = container.querySelector('#per-serving-btn');
         const perPackageButton = container.querySelector('#per-package-btn');
         const perUnitButton = container.querySelector('#per-unit-btn');
-        const nutrientValues = container.querySelectorAll('.nutrient-value');
+
+        // Find the panel that contains the clicked toggle buttons and limit
+        // updates to only nutrient-value elements inside that panel. This
+        // prevents other sections (for example the global "100g contienen"
+        // list) from being overwritten by the toggle logic.
+        const clickedBtn =
+          per100gBtn || perServingBtn || perPackageBtn || perUnitBtn;
+        let panelRoot = container;
+        if (clickedBtn) {
+          // Start from the button and walk up until we find an ancestor that
+          // contains .nutrient-value elements, or until we reach the container.
+          let p = clickedBtn.closest('div') || clickedBtn.parentElement;
+          while (p && p !== container && !p.querySelector('.nutrient-value')) {
+            p = p.parentElement;
+          }
+          if (p && p.querySelector('.nutrient-value')) panelRoot = p;
+        }
+        const nutrientValues = panelRoot.querySelectorAll('.nutrient-value');
 
         // Small helper to set button classes
         const baseInactive =
@@ -330,14 +348,22 @@ export function attachEventListeners(container) {
         const baseActive =
           'flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow';
         const setActive = (active) => {
-          per100gButton.className =
-            active === 'per100g' ? baseActive : baseInactive;
-          perServingButton.className =
-            active === 'perserving' ? baseActive : baseInactive;
-          perPackageButton.className =
-            active === 'perpackage' ? baseActive : baseInactive;
-          perUnitButton.className =
-            active === 'perunit' ? baseActive : baseInactive;
+          if (per100gButton) {
+            per100gButton.className =
+              active === 'per100g' ? baseActive : baseInactive;
+          }
+          if (perServingButton) {
+            perServingButton.className =
+              active === 'perserving' ? baseActive : baseInactive;
+          }
+          if (perPackageButton) {
+            perPackageButton.className =
+              active === 'perpackage' ? baseActive : baseInactive;
+          }
+          if (perUnitButton) {
+            perUnitButton.className =
+              active === 'perunit' ? baseActive : baseInactive;
+          }
         };
 
         let mode = 'per100g';
@@ -345,9 +371,18 @@ export function attachEventListeners(container) {
         else if (perPackageBtn) mode = 'perpackage';
         else if (perUnitBtn) mode = 'perunit';
 
+        // Persist the selected display mode on the app container so it survives re-renders
+        try {
+          const appRoot = container.closest('#app') || container;
+          if (appRoot) appRoot.dataset.nutrientMode = mode;
+        } catch (e) {
+          /* ignore */
+        }
+
         setActive(mode);
 
         nutrientValues.forEach((valueElement) => {
+          const dbg = () => !!(window && window.__DEBUG_NUTRIENT_TOGGLE);
           const unit = valueElement.dataset.unit || '';
           const targetRaw = valueElement.dataset.target;
           const target = targetRaw ? parseFloat(targetRaw) : null;
@@ -359,14 +394,104 @@ export function attachEventListeners(container) {
             perunit: valueElement.dataset.perunit,
           };
 
-          const rawValue = valueMap[mode];
-          const numericValue =
+          let rawValue = valueMap[mode];
+          let numericValue =
             rawValue !== undefined && rawValue !== ''
               ? parseFloat(rawValue)
               : NaN;
+
+          // If user selected 'perserving' but the element lacks a data-perserving
+          // value (common for ingredients rendered without that field), compute
+          // per-serving on the fly using the item from state (servingSizeGrams).
+          if (
+            mode === 'perserving' &&
+            (rawValue === undefined || rawValue === '')
+          ) {
+            try {
+              const currentItemId = state.ui.editingItemId;
+              const currentItem = state.items.byId[currentItemId];
+              if (dbg())
+                console.debug(
+                  '[nutrient-toggle] entering perserving fallback',
+                  {
+                    currentItemId,
+                    rawValue,
+                    per100g: valueElement.dataset.per100g,
+                  }
+                );
+              if (currentItem && currentItem.itemType === 'ingrediente') {
+                const per100gAttr = parseFloat(valueElement.dataset.per100g);
+                const per100gNum = !isNaN(per100gAttr) ? per100gAttr : 0;
+                if (dbg())
+                  console.debug('[nutrient-toggle] per100gNum', per100gNum);
+                let servingGrams = null;
+                if (
+                  currentItem.nutrients &&
+                  typeof currentItem.nutrients.servingSizeGrams !==
+                    'undefined' &&
+                  currentItem.nutrients.servingSizeGrams !== null
+                ) {
+                  servingGrams = Number(currentItem.nutrients.servingSizeGrams);
+                } else if (
+                  currentItem.nutrients &&
+                  typeof currentItem.nutrients.servingSize !== 'undefined' &&
+                  currentItem.nutrients.servingSize !== null
+                ) {
+                  servingGrams = Number(currentItem.nutrients.servingSize);
+                }
+                if (
+                  typeof servingGrams === 'number' &&
+                  !isNaN(servingGrams) &&
+                  servingGrams > 0
+                ) {
+                  const computedPerServing = (per100gNum * servingGrams) / 100;
+                  const rounded = parseFloat(computedPerServing.toFixed(2));
+                  rawValue = String(rounded);
+                  numericValue = rounded;
+                  if (dbg())
+                    console.debug('[nutrient-toggle] computed perServing', {
+                      servingGrams,
+                      computedPerServing,
+                      rounded,
+                    });
+                  // Persist the computed value into the DOM so future toggles can read it
+                  try {
+                    valueElement.dataset.perserving = rawValue;
+                    if (dbg())
+                      console.debug(
+                        '[nutrient-toggle] dataset.perserving set',
+                        valueElement.dataset.perserving
+                      );
+                  } catch (e) {
+                    /* ignore DOM write errors */
+                  }
+                  if (dbg() && window.__DEBUG_NUTRIENT_TOGGLE_BREAK) {
+                    debugger; // optional break
+                  }
+                }
+              }
+            } catch (e) {
+              if (dbg())
+                console.error(
+                  '[nutrient-toggle] error computing perserving',
+                  e
+                );
+              // Fallback to existing behavior if something goes wrong
+            }
+          }
+          // Format numeric values for display: integers without decimals, otherwise 2 decimals
+          const formatForDisplay = (v) => {
+            if (v == null || isNaN(v)) return '—';
+            return Number.isInteger(v) ? String(v) : parseFloat(v).toFixed(2);
+          };
+
           const displayValue = !isNaN(numericValue)
-            ? numericValue
-            : rawValue || '—';
+            ? formatForDisplay(numericValue)
+            : rawValue !== undefined &&
+                rawValue !== '' &&
+                !isNaN(parseFloat(rawValue))
+              ? formatForDisplay(parseFloat(rawValue))
+              : '—';
 
           const targetDisplay =
             target != null ? ` / ${parseFloat(target).toFixed(0)}${unit}` : '';
