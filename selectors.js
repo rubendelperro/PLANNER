@@ -23,6 +23,7 @@ export function calculateRecipeTotals(recipe, itemsById) {
   if (!recipe || !recipe.ingredients) {
     return { computedTotals: {}, totalGrams: 0 };
   }
+  const ingredientIds = recipe.ingredients.map((ri) => ri.ingredientId);
   const vectors = recipe.ingredients
     .map((ri) => {
       const fullIngredient = itemsById[ri.ingredientId];
@@ -42,6 +43,9 @@ export function calculateRecipeTotals(recipe, itemsById) {
     (sum, ing) => sum + ing.grams,
     0
   );
+
+  // Debugging is gated behind a global flag to avoid noisy output in CI/runs.
+  // No-op: diagnostic logging removed in cleanup
 
   return { computedTotals, totalGrams };
 }

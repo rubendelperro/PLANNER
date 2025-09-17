@@ -8,6 +8,11 @@ describe('Propagación de Cambios Globales (fixed)', () => {
   beforeEach(() => {
     cy.visit('/', {
       onBeforeLoad: (win) => {
+        // Ensure previous test runs don't contaminate this one
+        try {
+          win.localStorage.removeItem('atomCanvasState_v20');
+        } catch (e) {}
+        // no-op: debug disabled for normal test runs
         const initialState = JSON.parse(
           win.localStorage.getItem('atomCanvasState_v20') || '{}'
         );
@@ -224,6 +229,7 @@ describe('Propagación de Cambios Globales (fixed)', () => {
     cy.window().its('__appReady', { timeout: 20000 }).should('equal', true);
     // give the runtime a moment to recompute derived totals
     cy.wait(600);
+    // no-op: debug snapshot capture removed during cleanup
     cy.get('#app, [data-cy=app-root], #root, main, .app-root', {
       timeout: 10000,
     }).should('exist');
