@@ -280,10 +280,10 @@ function _renderItemActionButtons(isEditing, itemId) {
   return `
         <div class="flex gap-2">
       <button type="button" id="edit-item-btn-${itemId || 'global'}" class="edit-item-btn ${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
-        ${isEditing ? 'Cancelar Edición' : 'Editar Item'}
+  ${isEditing ? 'Cancelar' : 'Editar Item'}
             </button>
             <button type="button" id="back-to-library-btn" class="bg-green-600 hover:bg-green-700 text-white ${baseClass}">
-                ${isEditing ? 'Guardar y Volver' : 'Volver a Biblioteca'}
+                ${isEditing ? 'Guardar' : 'Volver a Biblioteca'}
             </button>
             <button type="button" id="delete-current-item-btn" data-item-id="${itemId}" class="bg-red-600 hover:bg-red-700 text-white ${baseClass}">
                 Eliminar
@@ -298,10 +298,10 @@ function _renderRecipeActionButtons(isEditing, recipeId) {
   return `
         <div class="flex gap-2">
             <button type="button" id="edit-recipe-btn" class="${isEditing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white ${baseClass}">
-                ${isEditing ? 'Cancelar Edición' : 'Editar Ingredientes'}
+                ${isEditing ? 'Cancelar' : 'Editar Ingredientes'}
             </button>
             <button type="button" id="back-to-recipes-btn" class="bg-green-600 hover:bg-green-700 text-white ${baseClass}">
-                ${isEditing ? 'Guardar y Volver' : 'Volver a Recetas'}
+                ${isEditing ? 'Guardar' : 'Volver a Recetas'}
             </button>
             <button type="button" id="delete-current-recipe-btn" data-recipe-id="${recipeId}" class="bg-red-600 hover:bg-red-700 text-white ${baseClass}">
                 Eliminar
