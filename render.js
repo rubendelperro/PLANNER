@@ -1422,16 +1422,14 @@ function _renderItemDetailView(itemId) {
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-gray-50 p-6 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Valores Nutricionales</h3>
-                        <div class="space-y-2">
-                            <div class="mb-4">
-                              <div class="flex items-center gap-2">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800">Valores Nutricionales</h3>
                                 <div class="flex bg-gray-200 rounded-lg p-1">
-                                  <button id="per-serving-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Ración</button>
-                                  <button id="per-100g-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow">100g</button>
+                                    <button id="per-serving-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Ración</button>
+                                    <button id="per-100g-btn" class="flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-gray-900 shadow">100g</button>
                                 </div>
-                              </div>
                             </div>
+                            <div class="space-y-2">
                             ${trackedNutrients
                               .map((nutrientId) => {
                                 const definition = items.byId[nutrientId];
